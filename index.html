@@ -37,6 +37,7 @@ button{cursor:pointer}
 .backup{display:flex;flex-wrap:wrap;gap:8px}.backup input{display:none}
 header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 20px;margin-bottom:18px}
 h1{font:800 clamp(32px,5vw,50px)/1.05 "Gothic A1",sans-serif;margin:0;letter-spacing:-.02em;text-wrap:balance}
+h1{cursor:pointer}
 h1 small{display:block;font:500 15px/1.4 "Noto Sans KR",sans-serif;color:var(--mute);margin-bottom:6px;letter-spacing:0}
 .nav{display:flex;gap:8px;flex-wrap:wrap}
 .btn{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font-weight:500}
@@ -109,17 +110,11 @@ textarea{min-height:76px;resize:vertical}
 <div class="wrap">
   <header>
     <h1 id="title"><small>나의 일정</small><span id="ym"></span></h1>
-    <div class="nav">
-      <button class="btn icon" id="prev" aria-label="이전 달">‹</button>
-      <button class="btn" id="today">오늘</button>
-      <button class="btn icon" id="next" aria-label="다음 달">›</button>
-      <button class="btn pri" id="addTop">+ 일정 추가</button>
-    </div>
-  </header>
+</header>
   <form class="quick" id="quick" autocomplete="off">
-    <input id="qIn" placeholder="예) 25일 심우용 선임과 점심" enterkeyhint="done" aria-label="일정을 한 줄로 입력">
+    <input id="qIn" placeholder="예) ○○일 △△△과 점심" enterkeyhint="done" aria-label="일정을 한 줄로 입력">
     <button class="btn pri">추가</button>
-    <p class="qPrev" id="qPrev" aria-live="polite">날짜, 시간, 내용을 한 줄로 적으면 알아서 달력에 넣어 드려요. 월을 빼면 이번 달로 넣어요.</p>
+    <p class="qPrev" id="qPrev" aria-live="polite">월을 빼면 이번 달로 들어가요.</p>
   </form>
   <p class="status" id="status"></p>
   <div class="main">
@@ -191,6 +186,7 @@ function renderDay(){
   const d=parse(sel);const p=$('dayPanel');
   const head=`<h2>${d.getMonth()+1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일</h2>`;
   if(editing){
+    p.hidden=false;
     const e=editing;const isNew=!e.id;
     p.innerHTML=head+`<p class="sub">${isNew?'새 일정을 적어 주세요.':'일정을 고치고 저장하세요.'}</p>
     <form id="f" novalidate>
@@ -206,9 +202,9 @@ function renderDay(){
     return;
   }
   const list=onDay(sel);
-  p.innerHTML=head+`<p class="sub">${list.length?'일정 '+list.length+'개':'아직 일정이 없어요.'}</p>`+
-  (list.length?`<ul class="list">${list.map(e=>`<li class="ev"><div class="time">${e.start?esc(fmtT(e.start)):'하루 종일'}${e.end?`<span>~ ${esc(fmtT(e.end))}</span>`:''}</div><div><b>${esc(e.title)}</b><span class="tag" style="--c:var(${CATS[e.cat].v})">${CATS[e.cat].n}</span>${e.memo?`<p>${esc(e.memo)}</p>`:''}</div><button class="edit" data-id="${esc(e.id)}">수정</button></li>`).join('')}</ul>`:`<p class="empty">아래 버튼을 누르거나 위의 “+ 일정 추가”로 이 날의 일정을 적어 보세요.</p>`)+
-  `<div class="acts" style="margin-top:12px"><button class="btn pri" id="addDay">+ 이 날에 추가</button></div>`;
+  p.hidden=!list.length;
+  if(!list.length){p.innerHTML='';return}
+  p.innerHTML=`<p class="sub" style="margin-bottom:4px">${d.getMonth()+1}월 ${d.getDate()}일 일정</p><ul class="list">${list.map(e=>`<li class="ev"><div class="time">${e.start?esc(fmtT(e.start)):'하루 종일'}${e.end?`<span>~ ${esc(fmtT(e.end))}</span>`:''}</div><div><b>${esc(e.title)}</b><span class="tag" style="--c:var(${CATS[e.cat].v})">${CATS[e.cat].n}</span>${e.memo?`<p>${esc(e.memo)}</p>`:''}</div><button class="edit" data-id="${esc(e.id)}">수정</button></li>`).join('')}</ul>`;
 }
 
 function renderUp(){
@@ -229,15 +225,15 @@ function toast(msg,fn){undoFn=fn||null;$('undo').hidden=!fn;$('toastMsg').textCo
 function openNew(k){sel=k||sel;editing={date:sel,cat:'work'};render()}
 function goMonth(k){const d=parse(k);view=new Date(d.getFullYear(),d.getMonth(),1)}
 
-$('prev').onclick=()=>{view.setMonth(view.getMonth()-1);renderCal()};
-$('next').onclick=()=>{view.setMonth(view.getMonth()+1);renderCal()};
-$('today').onclick=()=>{sel=todayKey();goMonth(sel);editing=null;render()};
-$('addTop').onclick=()=>openNew(sel);
+{let sx=0,sy=0;const cal=document.querySelector('.cal');
+cal.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+cal.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
+  if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5){view.setMonth(view.getMonth()+(dx<0?1:-1));renderCal()}},{passive:true});}
+$('ym').parentElement.onclick=()=>{sel=todayKey();goMonth(sel);editing=null;render()};
 $('grid').onclick=ev=>{const c=ev.target.closest('.cell');if(!c)return;sel=c.dataset.k;if(parse(sel).getMonth()!==view.getMonth())goMonth(sel);editing=null;render()};
 $('dayPanel').addEventListener('click',async ev=>{
   const t=ev.target;
-  if(t.id==='addDay')openNew(sel);
-  else if(t.classList.contains('edit')){const e=events.find(x=>x.id===t.dataset.id);if(e){editing={...e};renderDay()}}
+  if(t.classList.contains('edit')){const e=events.find(x=>x.id===t.dataset.id);if(e){editing={...e};renderDay()}}
   else if(t.id==='fCancel'){editing=null;renderDay()}
   else if(t.id==='fDel'){const e=events.find(x=>x.id===editing.id);if(e&&await remove(e.id)){editing=null;render();toast('“'+e.title+'” 일정을 지웠어요.',async()=>{if(await save(e)){sel=e.date;goMonth(sel);render()}})}}
 });
@@ -354,7 +350,7 @@ function quickParse(){
   return q;
 }
 $('qIn').addEventListener('input',()=>{
-  if(!$('qIn').value.trim()){qMsg('날짜, 시간, 내용을 한 줄로 적으면 알아서 달력에 넣어 드려요. 월을 빼면 이번 달로 넣어요.');return}
+  if(!$('qIn').value.trim()){qMsg('월을 빼면 이번 달로 들어가요.');return}
   const q=quickParse();
   if(q.err)return qMsg(`<span class="bad">${esc(q.err)}</span>`);
   if(!q.title)return qMsg('일정 내용도 적어 주세요.');
