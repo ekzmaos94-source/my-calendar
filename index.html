@@ -121,10 +121,31 @@ textarea{min-height:76px;resize:vertical}
 .up .tm{font-size:14px;color:var(--mute);white-space:nowrap;font-variant-numeric:tabular-nums}
 .up .row b{font-weight:500;overflow-wrap:anywhere}
 .upmore{padding-top:10px;border-top:2px solid var(--line)}.upmore .btn{width:100%}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,120px);background:var(--ink);color:var(--bg);padding:8px 8px 8px 18px;border-radius:12px;display:flex;gap:10px;align-items:center;transition:transform .25s;width:max-content;max-width:min(440px,calc(100vw - 28px))}
-.toast.show{transform:translate(-50%,0)}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translate(-50%,120px);background:var(--ink);color:var(--bg);padding:8px 8px 8px 18px;border-radius:12px;display:flex;gap:10px;align-items:center;transition:transform .25s;width:max-content;max-width:min(440px,calc(100vw - 28px))}
+.toast{opacity:0;visibility:hidden;transition:transform .25s,opacity .2s,visibility .25s}.toast.show{transform:translate(-50%,0);opacity:1;visibility:visible}
 .toast span{min-width:0}.toast button{flex:none;white-space:nowrap;min-height:40px;border:0;border-radius:8px;padding:0 14px;background:var(--bg);color:var(--ink);font-weight:700}
 @media(prefers-reduced-motion:reduce){.toast{transition:none}}
+body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+.gnb{position:fixed;left:0;right:0;bottom:0;z-index:5;display:grid;grid-template-columns:1fr 1fr;padding:6px max(12px,env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line)}
+.gnb button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:52px;border:0;background:none;color:var(--mute);font-size:12px;font-weight:700;border-radius:12px}
+.gnb svg{width:24px;height:24px}
+.gnb [aria-current=page]{color:var(--ink)}
+.invHead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.invHead h2{font:800 26px/1.2 "Gothic A1",sans-serif;margin:0}
+.ig{border:1px solid var(--line);border-radius:16px;padding:4px 16px;margin-bottom:16px}
+.ig h3{display:flex;align-items:center;gap:8px;font:700 15px/1 "Gothic A1",sans-serif;color:var(--mute);margin:14px 0 4px}
+.ig h3 .flag{width:21px;height:14px}
+.ig .gd{margin-left:auto;font:500 13px "Noto Sans KR",sans-serif}
+.st{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.ig h3+.st{border-top:0}
+.st b{font-size:17px;overflow-wrap:anywhere}
+.st small{display:block;font-size:13px;color:var(--mute)}
+.st .px{text-align:right;font:700 18px/1.2 "Gothic A1",sans-serif;white-space:nowrap;font-variant-numeric:tabular-nums}
+.st .px span{display:block;font:700 13px/1.4 "Noto Sans KR",sans-serif}
+.up1{color:var(--red)}.dn1{color:var(--blue)}.fl1{color:var(--mute)}
+.howto{margin-top:8px;border:1px solid var(--line);border-radius:16px;padding:14px 16px;font-size:15px}
+.howto summary{cursor:pointer;font-weight:700;min-height:28px}
+.howto pre{background:var(--paper);padding:10px 12px;border-radius:10px;font-size:13px;overflow-x:auto}
 @media(max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:600px){
 header{flex-wrap:nowrap;align-items:flex-end;gap:10px}
@@ -149,6 +170,7 @@ h1{font-size:clamp(24px,7.4vw,32px)}
     <h1 id="title"><small id="tYear"></small><span id="tDate"></span></h1>
     <div class="wx" id="wx" aria-live="polite"></div>
   </header>
+  <section id="tabCal" class="tab" aria-label="일정">
   <form class="quick" id="quick" autocomplete="off">
     <input id="qIn" placeholder="예) ○○일 △△△과 점심" enterkeyhint="done" aria-label="일정을 한 줄로 입력">
     <button class="btn pri">추가</button>
@@ -176,7 +198,26 @@ h1{font-size:clamp(24px,7.4vw,32px)}
       </section>
     </aside>
   </div>
+  </section>
+  <section id="tabInv" class="tab" hidden aria-label="투자">
+    <div class="invHead"><h2>관심 종목</h2><button class="btn" id="invRefresh">새로고침</button></div>
+    <p class="sub" id="invMeta"></p>
+    <div id="invList"></div>
+    <details class="howto">
+      <summary>종목 추가·삭제 방법</summary>
+      <p>GitHub 저장소의 <b>watchlist.json</b> 파일을 열고 연필 버튼(Edit)을 눌러 고친 뒤 <b>Commit changes</b>를 누르세요. 1~2분 뒤 종가가 새로 들어와요.</p>
+      <p>한국 주식은 종목코드 뒤에 코스피면 <b>.KS</b>, 코스닥이면 <b>.KQ</b>를 붙이고, 미국 주식은 티커를 그대로 써요.</p>
+      <pre>{"symbol": "005930.KS", "name": "삼성전자"},
+{"symbol": "035720.KS", "name": "카카오"},
+{"symbol": "AAPL", "name": "애플"}</pre>
+      <p>종가는 평일 한국 시간 오후 4시 30분(한국 장 마감 후)과 오전 7시 30분(미국 장 마감 후)에 자동으로 업데이트돼요.</p>
+    </details>
+  </section>
 </div>
+<nav class="gnb" aria-label="메뉴">
+  <button data-tab="cal" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>일정</button>
+  <button data-tab="inv"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18l5-6 4 3 7-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 6h5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>투자</button>
+</nav>
 <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="undo">되돌리기</button></div>
 <script>
 {
@@ -577,7 +618,59 @@ function wxLocate(){
   if(c)wxShow(c);
   if(ok)wxLocate();else if(!c)wxAsk('오늘 날씨');
 })();
+// ---------- 탭 ----------
+function showTab(t){
+  const inv=t==='inv';
+  $('tabCal').hidden=inv;$('tabInv').hidden=!inv;
+  for(const b of document.querySelectorAll('.gnb button')){if(b.dataset.tab===t)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')}
+  if(inv)loadPrices(false);
+  scrollTo(0,0);
+}
+document.querySelector('.gnb').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  const t=b.dataset.tab;try{history.replaceState(null,'',t==='inv'?'#invest':location.pathname)}catch(_){}showTab(t)});
+addEventListener('hashchange',()=>showTab(location.hash==='#invest'?'inv':'cal'));
+
+// ---------- 투자: GitHub이 매일 만들어 두는 prices.json 읽기 ----------
+let pricesAt=0;
+function pricesUrl(){
+  const host=location.hostname,repo=location.pathname.split('/')[1];
+  if(/\.github\.io$/.test(host)&&repo)return `https://raw.githubusercontent.com/${host.split('.')[0]}/${repo}/main/prices.json?t=${Date.now()}`;
+  return 'prices.json?t='+Date.now();
+}
+const fmtPx=(v,cur)=>{v=Number(v);if(!isFinite(v))return '-';
+  return cur==='KRW'?Math.round(v).toLocaleString('ko-KR')+'원':cur==='USD'?'$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):v.toLocaleString('ko-KR',{maximumFractionDigits:2})+(cur?' '+cur:'')};
+function renderPrices(d){
+  const items=Array.isArray(d&&d.items)?d.items:[];
+  if(!items.length){$('invList').innerHTML='<p class="empty">아직 종가 데이터가 없어요. GitHub Actions가 처음 실행되면 여기에 나타나요.</p>';$('invMeta').textContent='';return}
+  const up=d.updated?new Date(d.updated):null;
+  $('invMeta').textContent=up&&!isNaN(up)?(up.getMonth()+1)+'월 '+up.getDate()+'일 '+pad(up.getHours())+':'+pad(up.getMinutes())+' 업데이트':'';
+  const groups=[['KR','한국 주식'],['US','미국 주식']].map(([m,label])=>{
+    const g=items.filter(i=>(i.market||(/\.(KS|KQ)$/i.test(i.symbol)?'KR':'US'))===m);if(!g.length)return '';
+    const ds=[...new Set(g.map(i=>String(i.date||'')))].filter(okDate).sort();const dl=ds.length?ds[ds.length-1]:'';
+    return `<div class="ig"><h3>${flag(m)}${label}${dl?`<span class="gd">${parse(dl).getMonth()+1}월 ${parse(dl).getDate()}일 (${DOW[parse(dl).getDay()]}) 종가</span>`:''}</h3>${g.map(i=>{
+      const pct=Number(i.changePct),cls=pct>0?'up1':pct<0?'dn1':'fl1',arrow=pct>0?'▲':pct<0?'▼':'–';
+      const chg=Number(i.change);
+      return `<div class="st"><div><b>${esc(i.name||i.symbol)}</b><small>${esc(String(i.symbol||'').replace(/\.(KS|KQ)$/i,''))}${i.stale?' · 업데이트 실패, 이전 값':''}</small></div><div class="px">${esc(fmtPx(i.close,i.currency))}<span class="${cls}">${arrow} ${esc(isFinite(chg)?fmtPx(Math.abs(chg),i.currency):'')} (${isFinite(pct)?Math.abs(pct).toFixed(2):'-'}%)</span></div></div>`}).join('')}</div>`}).join('');
+  $('invList').innerHTML=groups;
+}
+async function loadPrices(force){
+  if(!force&&Date.now()-pricesAt<10*60000)return;
+  let cache=null;try{cache=JSON.parse(localStorage.getItem('inv-cache')||'null')}catch(e){}
+  if(cache&&!pricesAt)renderPrices(cache);
+  if(!cache&&!pricesAt)$('invList').innerHTML='<p class="empty">종가를 불러오는 중…</p>';
+  try{
+    const r=await fetch(pricesUrl(),{cache:'no-store'});if(!r.ok)throw 0;
+    const d=await r.json();pricesAt=Date.now();renderPrices(d);
+    try{localStorage.setItem('inv-cache',JSON.stringify(d))}catch(e){}
+  }catch(e){
+    if(!cache)$('invList').innerHTML='<p class="empty">종가 파일을 찾지 못했어요. GitHub Actions가 한 번 실행돼야 생겨요.</p>';
+    else setStatus('');
+  }
+}
+$('invRefresh').onclick=()=>loadPrices(true);
+
 load();
+if(location.hash==='#invest')showTab('inv');
 if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
 }
 </script>
