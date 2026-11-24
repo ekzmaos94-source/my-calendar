@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="내 일정">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121316" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>나의 일정 캘린더</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: 차분하고 실용적인 개인 다이어리, 매일 여는 도구
+   IDEA: 벽에 거는 한국식 달력 — 일요일은 빨강, 토요일은 파랑
+   PICTURE: 달력 그리드 자체가 그림, 옆에는 시간이 크게 매달린 하루 목록
+   COLOUR and TYPE: 흰 종이 + 먹색, 일요일 빨강을 강조색으로; Gothic A1 제목 + Noto Sans KR 본문
+   LAYOUT: 상단 월 제목과 이동 버튼, 좌측 달력, 우측 선택한 날의 일정과 다가오는 일정 */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#121316);--paper:light-dark(#f4f5f7,#1b1d22);--ink:light-dark(#16181d,#eceef2);
+--mute:light-dark(#646a75,#9aa1ad);--line:light-dark(#e3e5ea,#2b2e35);--red:light-dark(#d92d3a,#ff6b74);
+--blue:light-dark(#2563d9,#6d9bff);--sel:light-dark(#16181d,#eceef2);--selInk:light-dark(#ffffff,#121316);
+--c-work:light-dark(#2563d9,#6d9bff);--c-me:light-dark(#8a3fd1,#c08cff);--c-meet:light-dark(#e0730f,#ffa95a);--c-etc:light-dark(#5f6b7a,#a3adbb)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Noto Sans KR",system-ui,sans-serif;overflow-x:clip}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.wrap{max-width:1240px;margin:0 auto;padding:calc(clamp(18px,3vw,40px) + env(safe-area-inset-top)) calc(max(4vw,14px) + env(safe-area-inset-right)) calc(48px + env(safe-area-inset-bottom)) calc(max(4vw,14px) + env(safe-area-inset-left))}
+.backup{display:flex;flex-wrap:wrap;gap:8px}.backup input{display:none}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 20px;margin-bottom:18px}
+h1{font:800 clamp(32px,5vw,50px)/1.05 "Gothic A1",sans-serif;margin:0;letter-spacing:-.02em;text-wrap:balance}
+h1 small{display:block;font:500 15px/1.4 "Noto Sans KR",sans-serif;color:var(--mute);margin-bottom:6px;letter-spacing:0}
+.nav{display:flex;gap:8px;flex-wrap:wrap}
+.btn{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font-weight:500}
+.btn:hover{background:var(--paper)}
+.btn.icon{width:44px;padding:0;font-size:20px;line-height:1}
+.btn.pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.dan{color:var(--red)}
+.status{font-size:14px;color:var(--mute);margin:-6px 0 14px;min-height:0}
+.status:empty{display:none}
+.main{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:22px;align-items:start}
+.cal{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--bg)}
+.dow,.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.dow div{padding:10px 8px;font-size:13px;font-weight:700;color:var(--mute);background:var(--paper);border-bottom:1px solid var(--line)}
+.dow div:first-child,.sun .num{color:var(--red)}
+.dow div:last-child,.sat .num{color:var(--blue)}
+.cell{min-height:108px;padding:6px;border:0;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:none;text-align:left;display:flex;flex-direction:column;gap:3px}
+.cell:nth-child(7n){border-right:0}
+.cell.out{background:var(--paper)}.cell.out .num{opacity:.45}
+.num{font:700 14px/1 "Gothic A1",sans-serif;width:28px;height:28px;display:grid;place-items:center;border-radius:50%}
+.today .num{outline:2px solid var(--red);outline-offset:-2px}
+.cell.on .num{background:var(--sel);color:var(--selInk)!important;outline:0}
+.cell:hover{background:var(--paper)}
+.chip{font-size:12px;line-height:1.35;padding:2px 6px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;background:var(--c)}
+.more{font-size:12px;color:var(--mute);padding-left:4px}
+.dots{display:none;gap:3px;flex-wrap:wrap;padding-left:4px}.dots i{width:6px;height:6px;border-radius:50%;background:var(--c)}
+aside{display:grid;gap:18px}
+.panel{border:1px solid var(--line);border-radius:16px;padding:18px}
+.panel h2{font:700 22px/1.2 "Gothic A1",sans-serif;margin:0 0 4px}
+.panel .sub{color:var(--mute);font-size:14px;margin:0 0 14px}
+.list{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.ev{display:grid;grid-template-columns:4.6em minmax(0,1fr) auto;gap:10px;align-items:start;padding:10px 0;border-top:1px solid var(--line)}
+.ev:first-child{border-top:0}
+.time{font:700 17px/1.3 "Gothic A1",sans-serif;white-space:nowrap}
+.time span{display:block;font:500 13px/1.3 "Noto Sans KR",sans-serif;color:var(--mute)}
+.ev b{display:block;font-weight:700;overflow-wrap:anywhere}
+.ev p{margin:2px 0 0;font-size:14px;color:var(--mute);overflow-wrap:anywhere;white-space:pre-wrap}
+.tag{display:inline-block;font-size:12px;font-weight:700;color:var(--c);margin-top:2px}
+.ev .edit{min-height:44px;padding:0 12px;border:0;background:none;color:var(--mute);border-radius:8px}
+.ev .edit:hover{background:var(--paper);color:var(--ink)}
+.empty{color:var(--mute);font-size:15px;padding:10px 0}
+form{display:grid;gap:12px}
+label{display:grid;gap:5px;font-size:14px;font-weight:500}
+input,select,textarea{font-size:16px;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);width:100%}
+textarea{min-height:76px;resize:vertical}
+.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.cats{display:flex;flex-wrap:wrap;gap:8px}
+.cats label{display:flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:999px;cursor:pointer}
+.cats input{width:auto;min-height:0;accent-color:var(--c)}
+.cats label:has(input:checked){border-color:var(--c);background:color-mix(in srgb,var(--c) 12%,transparent)}
+.acts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.acts .btn.dan{margin-right:auto}
+.err{color:var(--red);font-size:14px;margin:0}
+.up li{grid-template-columns:5.4em minmax(0,1fr)}
+.up .d{font:700 15px/1.3 "Gothic A1",sans-serif;white-space:nowrap}.up .d span{display:block;font:500 13px "Noto Sans KR";color:var(--mute)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,120px);background:var(--ink);color:var(--bg);padding:8px 8px 8px 18px;border-radius:12px;display:flex;gap:10px;align-items:center;transition:transform .25s;max-width:calc(100vw - 28px)}
+.toast.show{transform:translate(-50%,0)}
+.toast button{min-height:40px;border:0;border-radius:8px;padding:0 14px;background:var(--bg);color:var(--ink);font-weight:700}
+@media(prefers-reduced-motion:reduce){.toast{transition:none}}
+@media(max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.cell{min-height:58px;padding:4px;align-items:center}.chip,.more{display:none}.dots{display:flex;justify-content:center;padding:0}.num{font-size:13px}.dow div{text-align:center;padding:8px 2px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="title"><small>나의 일정</small><span id="ym"></span></h1>
+    <div class="nav">
+      <button class="btn icon" id="prev" aria-label="이전 달">‹</button>
+      <button class="btn" id="today">오늘</button>
+      <button class="btn icon" id="next" aria-label="다음 달">›</button>
+      <button class="btn pri" id="addTop">+ 일정 추가</button>
+    </div>
+  </header>
+  <p class="status" id="status"></p>
+  <div class="main">
+    <section class="cal" aria-label="달력">
+      <div class="dow"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
+      <div class="grid" id="grid"></div>
+    </section>
+    <aside>
+      <section class="panel" id="dayPanel"></section>
+      <section class="panel">
+        <h2>다가오는 7일</h2>
+        <p class="sub">오늘부터 일주일 동안의 일정이에요.</p>
+        <ul class="list up" id="upcoming"></ul>
+      </section>
+      <section class="panel">
+        <h2>백업</h2>
+        <p class="sub">일정은 이 휴대폰에만 저장돼요. 가끔 백업 파일을 받아 두면 폰을 바꿔도 옮길 수 있어요.</p>
+        <div class="backup"><button class="btn" id="exp">백업 파일 받기</button><label class="btn" style="display:inline-flex;align-items:center;cursor:pointer">백업 불러오기<input type="file" id="imp" accept=".json,application/json"></label></div>
+      </section>
+    </aside>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="undo">되돌리기</button></div>
+<script>
+{
+const CATS={work:{n:'업무',v:'--c-work'},me:{n:'개인',v:'--c-me'},meet:{n:'약속',v:'--c-meet'},etc:{n:'기타',v:'--c-etc'}};
+const DOW=['일','월','화','수','목','금','토'];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const key=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parse=k=>{const[y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)};
+const todayKey=()=>key(new Date());
+const catOf=c=>CATS[c]?c:'etc';
+const fmtT=t=>{if(!t)return'';const[h,m]=t.split(':').map(Number);return(h<12?'오전 ':'오후 ')+((h%12)||12)+(m?':'+pad(m):'시')};
+const okDate=s=>/^\d{4}-\d{2}-\d{2}$/.test(s||'');
+const okTime=s=>!s||/^\d{2}:\d{2}$/.test(s);
+
+let events=[],lastDeleted=null,toastTimer=0;
+let view=new Date();view.setDate(1);
+let sel=todayKey();
+let editing=null; // null: 목록, {}: 새 일정, {id...}: 수정
+
+function clean(raw,id){
+  const e={id,title:String(raw.title||'').slice(0,120),date:okDate(raw.date)?raw.date:'',start:okTime(raw.start)?raw.start||'':'',end:okTime(raw.end)?raw.end||'':'',cat:catOf(raw.cat),memo:String(raw.memo||'').slice(0,1000)};
+  return e.date&&e.title?e:null;
+}
+const sortEv=(a,b)=>(a.date+(a.start||'99')).localeCompare(b.date+(b.start||'99'));
+const onDay=k=>events.filter(e=>e.date===k).sort(sortEv);
+const setStatus=t=>{$('status').textContent=t};
+
+function renderCal(){
+  $('ym').textContent=view.getFullYear()+'년 '+(view.getMonth()+1)+'월';
+  const start=new Date(view);start.setDate(1-view.getDay());
+  const t=todayKey();let h='';
+  for(let i=0;i<42;i++){
+    const d=new Date(start);d.setDate(start.getDate()+i);const k=key(d);
+    const list=onDay(k);const w=d.getDay();
+    const cls=['cell',d.getMonth()!==view.getMonth()?'out':'',w===0?'sun':'',w===6?'sat':'',k===t?'today':'',k===sel?'on':''].join(' ');
+    const chips=list.slice(0,3).map(e=>`<span class="chip" style="--c:var(${CATS[e.cat].v})">${e.start?esc(fmtT(e.start).replace(/^오[전후] /,''))+' ':''}${esc(e.title)}</span>`).join('');
+    const more=list.length>3?`<span class="more">+${list.length-3}개 더</span>`:'';
+    const dots=list.length?`<span class="dots">${list.slice(0,4).map(e=>`<i style="--c:var(${CATS[e.cat].v})"></i>`).join('')}</span>`:'';
+    h+=`<button class="${cls}" data-k="${k}" aria-label="${d.getMonth()+1}월 ${d.getDate()}일, 일정 ${list.length}개"><span class="num">${d.getDate()}</span>${chips}${more}${dots}</button>`;
+  }
+  $('grid').innerHTML=h;
+}
+
+function renderDay(){
+  const d=parse(sel);const p=$('dayPanel');
+  const head=`<h2>${d.getMonth()+1}월 ${d.getDate()}일 ${DOW[d.getDay()]}요일</h2>`;
+  if(editing){
+    const e=editing;const isNew=!e.id;
+    p.innerHTML=head+`<p class="sub">${isNew?'새 일정을 적어 주세요.':'일정을 고치고 저장하세요.'}</p>
+    <form id="f" novalidate>
+      <label>제목<input id="fTitle" maxlength="120" required value="${esc(e.title||'')}" placeholder="예) 치과 예약"></label>
+      <label>날짜<input id="fDate" type="date" required value="${esc(e.date||sel)}"></label>
+      <div class="row"><label>시작<input id="fStart" type="time" value="${esc(e.start||'')}"></label><label>종료<input id="fEnd" type="time" value="${esc(e.end||'')}"></label></div>
+      <div class="cats" role="radiogroup" aria-label="분류">${Object.entries(CATS).map(([c,v])=>`<label style="--c:var(${v.v})"><input type="radio" name="cat" value="${c}" ${catOf(e.cat)===c?'checked':''}>${v.n}</label>`).join('')}</div>
+      <label>메모<textarea id="fMemo" maxlength="1000" placeholder="장소, 준비물 등">${esc(e.memo||'')}</textarea></label>
+      <p class="err" id="fErr" hidden></p>
+      <div class="acts">${isNew?'':'<button type="button" class="btn dan" id="fDel">삭제</button>'}<button type="button" class="btn" id="fCancel">취소</button><button class="btn pri">저장</button></div>
+    </form>`;
+    $('fTitle').focus();
+    return;
+  }
+  const list=onDay(sel);
+  p.innerHTML=head+`<p class="sub">${list.length?'일정 '+list.length+'개':'아직 일정이 없어요.'}</p>`+
+  (list.length?`<ul class="list">${list.map(e=>`<li class="ev"><div class="time">${e.start?esc(fmtT(e.start)):'하루 종일'}${e.end?`<span>~ ${esc(fmtT(e.end))}</span>`:''}</div><div><b>${esc(e.title)}</b><span class="tag" style="--c:var(${CATS[e.cat].v})">${CATS[e.cat].n}</span>${e.memo?`<p>${esc(e.memo)}</p>`:''}</div><button class="edit" data-id="${esc(e.id)}">수정</button></li>`).join('')}</ul>`:`<p class="empty">아래 버튼을 누르거나 위의 “+ 일정 추가”로 이 날의 일정을 적어 보세요.</p>`)+
+  `<div class="acts" style="margin-top:12px"><button class="btn pri" id="addDay">+ 이 날에 추가</button></div>`;
+}
+
+function renderUp(){
+  const t=parse(todayKey());const end=new Date(t);end.setDate(t.getDate()+7);
+  const tk=key(t),ek=key(end);
+  const list=events.filter(e=>e.date>=tk&&e.date<ek).sort(sortEv).slice(0,12);
+  $('upcoming').innerHTML=list.length?list.map(e=>{const d=parse(e.date);const rel=e.date===tk?'오늘':(d-t)/864e5===1?'내일':DOW[d.getDay()]+'요일';
+    return `<li class="ev"><div class="d">${d.getMonth()+1}/${d.getDate()}<span>${rel}</span></div><div><b>${esc(e.title)}</b><span class="tag" style="--c:var(${CATS[e.cat].v})">${CATS[e.cat].n}${e.start?' · '+esc(fmtT(e.start)):''}</span></div></li>`}).join('')
+    :'<li class="empty">이번 주에는 예정된 일정이 없어요.</li>';
+}
+function render(){renderCal();renderDay();renderUp()}
+
+function persist(){try{localStorage.setItem('cal-events',JSON.stringify(events));return true}catch(e){setStatus('저장 공간에 쓰지 못했어요. 사파리의 개인정보 보호 브라우징이 켜져 있는지 확인해 주세요.');return false}}
+async function save(e){events=events.filter(x=>x.id!==e.id).concat(e);return persist()}
+async function remove(id){events=events.filter(x=>x.id!==id);return persist()}
+function toast(msg){$('toastMsg').textContent=msg;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),6000)}
+
+function openNew(k){sel=k||sel;editing={date:sel,cat:'work'};render()}
+function goMonth(k){const d=parse(k);view=new Date(d.getFullYear(),d.getMonth(),1)}
+
+$('prev').onclick=()=>{view.setMonth(view.getMonth()-1);renderCal()};
+$('next').onclick=()=>{view.setMonth(view.getMonth()+1);renderCal()};
+$('today').onclick=()=>{sel=todayKey();goMonth(sel);editing=null;render()};
+$('addTop').onclick=()=>openNew(sel);
+$('grid').onclick=ev=>{const c=ev.target.closest('.cell');if(!c)return;sel=c.dataset.k;if(parse(sel).getMonth()!==view.getMonth())goMonth(sel);editing=null;render()};
+$('dayPanel').addEventListener('click',async ev=>{
+  const t=ev.target;
+  if(t.id==='addDay')openNew(sel);
+  else if(t.classList.contains('edit')){const e=events.find(x=>x.id===t.dataset.id);if(e){editing={...e};renderDay()}}
+  else if(t.id==='fCancel'){editing=null;renderDay()}
+  else if(t.id==='fDel'){const e=events.find(x=>x.id===editing.id);if(e&&await remove(e.id)){lastDeleted=e;editing=null;render();toast('“'+e.title+'” 일정을 지웠어요.')}}
+});
+$('dayPanel').addEventListener('submit',async ev=>{
+  ev.preventDefault();
+  const title=$('fTitle').value.trim(),date=$('fDate').value,start=$('fStart').value,end=$('fEnd').value;
+  const cat=(document.querySelector('input[name=cat]:checked')||{}).value||'etc';
+  const err=$('fErr');
+  const fail=m=>{err.textContent=m;err.hidden=false};
+  if(!title)return fail('제목을 적어 주세요.');
+  if(!okDate(date))return fail('날짜를 골라 주세요.');
+  if(start&&end&&end<start)return fail('종료 시간이 시작 시간보다 빨라요.');
+  const id=editing.id||('e'+Date.now().toString(36)+Math.random().toString(36).slice(2,7));
+  const e=clean({title,date,start,end,cat,memo:$('fMemo').value.trim()},id);
+  if(e&&await save(e)){editing=null;sel=date;goMonth(date);render()}
+});
+$('undo').onclick=async()=>{if(lastDeleted&&await save(lastDeleted)){sel=lastDeleted.date;goMonth(sel);lastDeleted=null;render()}$('toast').classList.remove('show')};
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&editing){editing=null;renderDay()}});
+
+function load(){
+  try{const raw=JSON.parse(localStorage.getItem('cal-events')||'[]');events=(Array.isArray(raw)?raw:[]).map(r=>clean(r||{},String((r&&r.id)||''))).filter(e=>e&&e.id)}catch(e){events=[]}
+  setStatus('');render();
+}
+$('exp').onclick=()=>{
+  const blob=new Blob([JSON.stringify(events,null,1)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='내일정-백업-'+todayKey()+'.json';
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+};
+$('imp').onchange=async ev=>{
+  const f=ev.target.files[0];ev.target.value='';if(!f)return;
+  try{const raw=JSON.parse(await f.text());if(!Array.isArray(raw))throw 0;
+    const got=raw.map(r=>clean(r||{},String((r&&r.id)||''))).filter(e=>e&&e.id&&/^[\w-]{1,40}$/.test(e.id));
+    const ids=new Set(got.map(e=>e.id));events=events.filter(e=>!ids.has(e.id)).concat(got);
+    if(persist()){render();toast('일정 '+got.length+'개를 불러왔어요.')}
+  }catch(e){setStatus('백업 파일을 읽지 못했어요. 이 앱에서 받은 .json 파일인지 확인해 주세요.')}
+};
+load();
+if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+}
+</script>
+</body>
+</html>
