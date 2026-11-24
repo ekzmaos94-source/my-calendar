@@ -117,6 +117,7 @@ input,select{font-size:16px;min-height:44px;padding:8px 12px;border:1px solid va
 
 /* 투자 */
 .invHead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.invBtns{display:flex;gap:8px}.invBtns a.btn{display:inline-flex;align-items:center;text-decoration:none;color:inherit}
 .invHead h2{font:800 26px/1.2 var(--head);margin:0}
 .ig{border:1px solid var(--line);border-radius:16px;padding:4px 16px;margin-bottom:16px}
 .ig h3{display:flex;align-items:center;gap:8px;font:700 15px/1 var(--head);color:var(--mute);margin:14px 0 4px}
@@ -166,7 +167,7 @@ h1{font-size:clamp(24px,7.4vw,32px)}
 <symbol id="fUS" viewBox="0 0 30 20"><rect width="30" height="20" fill="#b22234"/><rect y="1.538" width="30" height="1.538" fill="#fff"/><rect y="4.615" width="30" height="1.538" fill="#fff"/><rect y="7.692" width="30" height="1.538" fill="#fff"/><rect y="10.769" width="30" height="1.538" fill="#fff"/><rect y="13.846" width="30" height="1.538" fill="#fff"/><rect y="16.923" width="30" height="1.538" fill="#fff"/><rect width="13" height="10.77" fill="#3c3b6e"/></symbol>
 </defs></svg>
 <div class="wrap">
-  <header>
+  <header id="top">
     <h1><small id="tYear"></small><span id="tDate"></span></h1>
     <div class="wx" id="wx" aria-live="polite"></div>
   </header>
@@ -202,15 +203,14 @@ h1{font-size:clamp(24px,7.4vw,32px)}
   </section>
 
   <section id="tabInv" hidden aria-label="투자">
-    <div class="invHead"><h2>관심 종목</h2><button class="btn" id="invRefresh">새로고침</button></div>
+    <div class="invHead"><h2>관심 종목</h2><div class="invBtns"><a class="btn" id="invEdit" href="https://github.com" target="_blank" rel="noopener">종목 편집</a><button class="btn" id="invRefresh">새로고침</button></div></div>
     <p class="sub" id="invMeta"></p>
     <div id="invList"></div>
     <details class="howto">
       <summary>종목 추가·삭제 방법</summary>
-      <p>GitHub 저장소의 <b>watchlist.json</b> 파일을 열고 연필 버튼(Edit)을 눌러 고친 뒤 <b>Commit changes</b>를 누르세요. 1~2분 뒤 종가가 새로 들어와요.</p>
-      <p>한국 주식은 종목코드 뒤에 코스피면 <b>.KS</b>, 코스닥이면 <b>.KQ</b>를 붙이고, 미국 주식은 티커를 그대로 써요.</p>
-      <pre>{"symbol": "005930.KS", "name": "삼성전자"},
-{"symbol": "035720.KS", "name": "카카오"},
+      <p>위의 <b>종목 편집</b>을 누르면 GitHub의 종목 목록 편집 화면이 바로 열려요. 줄을 추가하거나 지운 뒤 <b>Commit changes</b>를 누르면 1~2분 뒤 종가가 새로 들어와요.</p>
+      <p>한국 주식은 <b>종목코드 6자리</b>, 미국 주식은 <b>티커</b>만 쓰면 돼요. 줄 끝의 쉼표(,)는 마지막 줄만 빼고 꼭 붙여 주세요.</p>
+      <pre>{"symbol": "005930", "name": "삼성전자"},
 {"symbol": "AAPL", "name": "애플"}</pre>
       <p>한국 주식은 평일 오후 4시에 그날 종가로, 미국 주식은 한국 시간 오전 7시(서머타임 기간엔 오전 6시)에 전날 미국 종가로 자동 업데이트돼요.</p>
     </details>
@@ -662,11 +662,15 @@ async function loadPrices(force){
   }catch(e){if(!cache)$('invList').innerHTML='<p class="empty">종가 파일을 찾지 못했어요. GitHub Actions가 한 번 실행돼야 생겨요.</p>'}
 }
 $('invRefresh').onclick=()=>loadPrices(true);
+{ // GitHub Pages 주소(아이디.github.io/저장소)에서 편집 화면 주소 만들기
+  const host=location.hostname,repo=location.pathname.split('/')[1];
+  if(/\.github\.io$/.test(host)&&repo)$('invEdit').href=`https://github.com/${host.split('.')[0]}/${repo}/edit/main/watchlist.json`;
+}
 
 // ================= 탭 =================
 function showTab(t){
   const inv=t==='inv';
-  $('tabCal').hidden=inv;$('tabInv').hidden=!inv;
+  $('tabCal').hidden=inv;$('tabInv').hidden=!inv;$('top').hidden=inv;
   for(const b of document.querySelectorAll('.gnb button'))b.dataset.tab===t?b.setAttribute('aria-current','page'):b.removeAttribute('aria-current');
   if(inv)loadPrices(false);
   scrollTo(0,0);

@@ -1,7 +1,17 @@
 [
-  {"symbol": "005930.KS", "name": "삼성전자"},
-  {"symbol": "000660.KS", "name": "SK하이닉스"},
-  {"symbol": "AAPL", "name": "애플"},
+  {"symbol": "379800", "name": "KODEX 미국S&P500"},
+  {"symbol": "381170", "name": "TIGER 미국테크TOP10 INDXX"},
+  {"symbol": "005930", "name": "삼성전자"},
+  {"symbol": "417840", "name": "저스템"},
+  {"symbol": "487230", "name": "KODEX 미국AI전력핵심인프라"},
+  {"symbol": "CVS", "name": "CVS 헬스"},
+  {"symbol": "GOOGL", "name": "알파벳 A"},
+  {"symbol": "BKR", "name": "베이커 휴즈"},
+  {"symbol": "FSLR", "name": "퍼스트 솔라"},
   {"symbol": "NVDA", "name": "엔비디아"},
-  {"symbol": "TSLA", "name": "테슬라"}
+  {"symbol": "BE", "name": "블룸 에너지"},
+  {"symbol": "CRCL", "name": "서클 인터넷 그룹"},
+  {"symbol": "ALM", "name": "알먼티 인더스트리스"},
+  {"symbol": "HIMS", "name": "힘스 앤드 허스 헬스"},
+  {"symbol": "IREN", "name": "아이렌"}
 ]

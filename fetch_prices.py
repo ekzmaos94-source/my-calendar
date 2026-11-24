@@ -1,7 +1,8 @@
 """관심 종목의 최근 종가를 받아 prices.json으로 저장합니다. (GitHub Actions가 매일 실행)
 
 - 종목 목록: watchlist.json
-  한국 주식은 종목코드 뒤에 코스피면 .KS, 코스닥이면 .KQ를 붙입니다. 예) 005930.KS
+  한국 주식은 종목코드 6자리만 쓰면 코스피·코스닥을 알아서 찾습니다. 예) 005930
+  (005930.KS, 417840.KQ처럼 시장을 직접 붙여도 됩니다)
   미국 주식은 티커 그대로 씁니다. 예) AAPL
 - 시세 출처: Yahoo Finance 차트 데이터 (미국 주식은 실패하면 Stooq로 한 번 더 시도)
 """
@@ -66,19 +67,28 @@ def main():
     for w in watch:
         sym = str(w["symbol"]).strip().upper()
         name = str(w.get("name") or sym)
-        market = "KR" if sym.endswith((".KS", ".KQ")) else "US"
+        is_code = len(sym) == 6 and sym[:1].isdigit()          # 한국 종목코드 6자리
+        market = "KR" if is_code or sym.endswith((".KS", ".KQ")) else "US"
+        if is_code:
+            tries = [(from_yahoo, sym + ".KS"), (from_yahoo, sym + ".KQ")]
+        elif market == "US":
+            tries = [(from_yahoo, sym), (from_stooq, sym)]
+        else:
+            tries = [(from_yahoo, sym)]
         data = None
-        for source in (from_yahoo, from_stooq) if market == "US" else (from_yahoo,):
+        for source, s in tries:
             try:
-                data = source(sym)
+                data = source(s)
+                sym = s
                 break
-            except Exception as e:  # 다음 출처로
-                print(f"[{sym}] {source.__name__} 실패: {e}", file=sys.stderr)
+            except Exception as e:  # 다음 후보로
+                print(f"[{s}] {source.__name__} 실패: {e}", file=sys.stderr)
             time.sleep(1)
         if data is None:
             failed.append(sym)
-            if sym in old:  # 실패하면 예전 값을 그대로 둡니다
-                items.append({**old[sym], "name": name, "stale": True})
+            prev = next((old[k] for k in (sym, sym + ".KS", sym + ".KQ") if k in old), None)
+            if prev:  # 실패하면 예전 값을 그대로 둡니다
+                items.append({**prev, "name": name, "stale": True})
             continue
         change = data["close"] - data["prev"]
         items.append({
