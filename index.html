@@ -110,8 +110,16 @@ textarea{min-height:76px;resize:vertical}
 .acts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
 .acts .btn.dan{margin-right:auto}
 .err{color:var(--red);font-size:14px;margin:0}
-.up li{grid-template-columns:5.4em minmax(0,1fr)}
-.up .d{font:700 15px/1.3 "Gothic A1",sans-serif;white-space:nowrap}.up .d span{display:block;font:500 13px "Noto Sans KR";color:var(--mute)}
+.up{gap:0}
+.up .day{padding:14px 0;border-top:2px solid var(--line)}.up .day:first-child{border-top:0;padding-top:4px}
+.up .dh{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+.up .dh b{font:700 16px/1.3 "Gothic A1",sans-serif}
+.up .dh span{font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--paper);color:var(--mute)}
+.up .now .dh span{background:var(--red);color:#fff}
+.up .row{display:grid;grid-template-columns:5.6em minmax(0,1fr);gap:10px;padding:5px 0 5px 2px}
+.up .tm{font-size:14px;color:var(--mute);white-space:nowrap;font-variant-numeric:tabular-nums}
+.up .row b{font-weight:500;overflow-wrap:anywhere}
+.upmore{padding-top:10px;border-top:2px solid var(--line)}.upmore .btn{width:100%}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,120px);background:var(--ink);color:var(--bg);padding:8px 8px 8px 18px;border-radius:12px;display:flex;gap:10px;align-items:center;transition:transform .25s;width:max-content;max-width:min(440px,calc(100vw - 28px))}
 .toast.show{transform:translate(-50%,0)}
 .toast span{min-width:0}.toast button{flex:none;white-space:nowrap;min-height:40px;border:0;border-radius:8px;padding:0 14px;background:var(--bg);color:var(--ink);font-weight:700}
@@ -287,11 +295,16 @@ function renderDay(){
 function renderUp(){
   const t=parse(todayKey());const end=new Date(t);end.setDate(t.getDate()+7);
   const tk=key(t),ek=key(end);
-  const list=events.filter(e=>e.date>=tk&&e.date<ek).sort(sortEv).slice(0,12);
-  $('upcoming').innerHTML=list.length?list.map(e=>{const d=parse(e.date);const rel=e.date===tk?'오늘':(d-t)/864e5===1?'내일':DOW[d.getDay()]+'요일';
-    return `<li class="ev"><div class="d">${d.getMonth()+1}/${d.getDate()}<span>${rel}</span></div><div><b>${esc(e.title)}</b>${e.start?`<span class="tag" style="--c:var(--mute)">${esc(fmtT(e.start))}</span>`:''}</div></li>`}).join('')
+  const all=events.filter(e=>e.date>=tk&&e.date<ek).sort(sortEv);
+  const LIMIT=7;const list=upOpen?all:all.slice(0,LIMIT);
+  const days=[];for(const e of list){const g=days[days.length-1];if(g&&g.k===e.date)g.items.push(e);else days.push({k:e.date,items:[e]})}
+  $('upcoming').innerHTML=days.length?days.map(g=>{const d=parse(g.k);const diff=Math.round((d-t)/864e5);const rel=diff===0?'오늘':diff===1?'내일':diff===2?'모레':'';
+    return `<li class="day${diff===0?' now':''}"><div class="dh"><b>${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})</b>${rel?`<span>${rel}</span>`:''}</div>${g.items.map(e=>`<div class="row"><span class="tm">${e.start?esc(fmtT(e.start)):'시간 없음'}</span><b>${esc(e.title)}</b></div>`).join('')}</li>`}).join('')
+    +(all.length>LIMIT?`<li class="upmore"><button class="btn" id="upToggle">${upOpen?'접기':'+ '+(all.length-LIMIT)+'개 더 보기'}</button></li>`:'')
     :'<li class="empty">이번 주에는 예정된 일정이 없어요.</li>';
 }
+let upOpen=false;
+$('upcoming').addEventListener('click',e=>{if(e.target.id==='upToggle'){upOpen=!upOpen;renderUp()}});
 function renderHead(){const t=new Date();$('tYear').textContent=t.getFullYear()+'년 · 나의 일정';$('tDate').textContent=(t.getMonth()+1)+'월 '+t.getDate()+'일 '+DOW[t.getDay()]+'요일'}
 function render(){renderHead();renderCal();renderDay();renderUp()}
 
