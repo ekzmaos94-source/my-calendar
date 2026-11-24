@@ -34,7 +34,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .wrap{max-width:1240px;margin:0 auto;padding:calc(clamp(18px,3vw,40px) + env(safe-area-inset-top)) calc(max(4vw,14px) + env(safe-area-inset-right)) calc(48px + env(safe-area-inset-bottom)) calc(max(4vw,14px) + env(safe-area-inset-left))}
-.backup{display:flex;flex-wrap:wrap;gap:8px}.backup input{display:none}
+.backup{display:flex;flex-wrap:wrap;gap:8px}
+.pw{margin-bottom:10px}.pw span{font-weight:400;color:var(--mute);font-size:13px}.backup input{display:none}
 header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 20px;margin-bottom:18px}
 h1{font:800 clamp(32px,5vw,50px)/1.05 "Gothic A1",sans-serif;margin:0;letter-spacing:-.02em;text-wrap:balance}
 h1 small{display:block;font:500 15px/1.4 "Noto Sans KR",sans-serif;color:var(--mute);margin-bottom:6px;letter-spacing:0}
@@ -169,7 +170,8 @@ h1{font-size:clamp(24px,7.4vw,32px)}
       </section>
       <section class="panel">
         <h2>백업</h2>
-        <p class="sub">일정은 이 휴대폰에만 저장돼요. 가끔 백업 파일을 받아 두면 폰을 바꿔도 옮길 수 있어요.</p>
+        <p class="sub">일정은 이 휴대폰에만 저장돼요. 가끔 백업 파일을 받아 두면 폰을 바꿔도 옮길 수 있어요. 비밀번호를 정하면 파일이 암호화돼서, 비밀번호 없이는 아무도 열 수 없어요.</p>
+        <label class="pw">백업 비밀번호 <span>(선택 · 받을 때와 불러올 때 같은 비밀번호)</span><input type="password" id="bkPw" autocomplete="new-password" placeholder="비워 두면 암호 없이 저장"></label>
         <div class="backup"><button class="btn" id="exp">백업 파일 받기</button><label class="btn" style="display:inline-flex;align-items:center;cursor:pointer">백업 불러오기<input type="file" id="imp" accept=".json,application/json"></label></div>
       </section>
     </aside>
@@ -197,11 +199,25 @@ let sel=todayKey();
 let editing=null; // null: 목록, {}: 새 일정, {id...}: 수정
 
 function clean(raw,id){
-  const e={id,title:String(raw.title||'').slice(0,120),date:okDate(raw.date)?raw.date:'',start:okTime(raw.start)?raw.start||'':'',end:okTime(raw.end)?raw.end||'':'',cat:catOf(raw.cat),memo:String(raw.memo||'').slice(0,1000)};
+  const e={id,title:String(raw.title||'').slice(0,120),date:okDate(raw.date)?raw.date:'',start:okTime(raw.start)?raw.start||'':'',end:okTime(raw.end)?raw.end||'':'',cat:catOf(raw.cat),memo:String(raw.memo||'').slice(0,1000),rep:['d','w','m','y'].includes(raw.rep)?raw.rep:''};
   return e.date&&e.title?e:null;
 }
 const sortEv=(a,b)=>(a.date+(a.start||'99')).localeCompare(b.date+(b.start||'99'));
-const onDay=k=>events.filter(e=>e.date===k).sort(sortEv);
+// 반복 일정: d=매일, w=매주(시작일의 요일), m=매월(시작일의 날짜), y=매년(시작일의 월·일)
+function occurs(e,k){
+  if(e.date===k)return true;
+  if(!e.rep||k<e.date)return false;
+  const a=parse(e.date),d=parse(k);
+  if(e.rep==='d')return true;
+  if(e.rep==='w')return a.getDay()===d.getDay();
+  const lastDay=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+  const dayOk=a.getDate()===d.getDate()||(a.getDate()>lastDay&&d.getDate()===lastDay);   // 31일 반복은 짧은 달엔 마지막 날
+  if(e.rep==='m')return dayOk;
+  if(e.rep==='y')return a.getMonth()===d.getMonth()&&dayOk;
+  return false;
+}
+const REP_TXT=e=>{const a=parse(e.date);return e.rep==='d'?'매일':e.rep==='w'?'매주 '+DOW[a.getDay()]+'요일':e.rep==='m'?'매월 '+a.getDate()+'일':e.rep==='y'?'매년 '+(a.getMonth()+1)+'월 '+a.getDate()+'일':''};
+const onDay=k=>events.filter(e=>occurs(e,k)).map(e=>e.date===k?e:{...e,date:k,anchor:e.date}).sort(sortEv);
 const setStatus=t=>{$('status').textContent=t};
 
 // ---------- 휴일 ----------
@@ -280,6 +296,7 @@ function renderDay(){
       <label>제목<input id="fTitle" maxlength="120" required value="${esc(e.title||'')}" placeholder="예) 치과 예약"></label>
       <label>날짜<input id="fDate" type="date" required value="${esc(e.date||sel)}"></label>
       <label>시작 시간<input id="fStart" type="time" value="${esc(e.start||'')}"></label>
+      <label>반복<select id="fRep">${[['','반복 안 함'],['d','매일'],['w','매주 (같은 요일)'],['m','매월 (같은 날짜)'],['y','매년 (같은 날짜)']].map(([v,n])=>`<option value="${v}" ${(e.rep||'')===v?'selected':''}>${n}</option>`).join('')}</select></label>
       <p class="err" id="fErr" hidden></p>
       <div class="acts">${isNew?'':'<button type="button" class="btn dan" id="fDel">삭제</button>'}<button type="button" class="btn" id="fCancel">취소</button><button class="btn pri">저장</button></div>
     </form>`;
@@ -289,13 +306,13 @@ function renderDay(){
   const list=onDay(sel);const hs=holOn(sel);
   p.hidden=!list.length&&!hs.length;
   if(p.hidden){p.innerHTML='';return}
-  p.innerHTML=`<p class="sub" style="margin-bottom:4px">${d.getMonth()+1}월 ${d.getDate()}일${list.length?' 일정':''}</p>${hs.map(x=>`<p class="holl">${flag(x.c)}${esc(x.n)}</p>`).join('')}<ul class="list">${list.map(e=>`<li class="ev"><div class="time">${e.start?esc(fmtT(e.start)):'하루 종일'}</div><div><b>${esc(e.title)}</b></div><button class="edit" data-id="${esc(e.id)}">수정</button></li>`).join('')}</ul>`;
+  p.innerHTML=`<p class="sub" style="margin-bottom:4px">${d.getMonth()+1}월 ${d.getDate()}일${list.length?' 일정':''}</p>${hs.map(x=>`<p class="holl">${flag(x.c)}${esc(x.n)}</p>`).join('')}<ul class="list">${list.map(e=>`<li class="ev"><div class="time">${e.start?esc(fmtT(e.start)):'하루 종일'}</div><div><b>${esc(e.title)}</b>${e.rep?`<span class="tag" style="--c:var(--mute)">↻ ${esc(REP_TXT(events.find(x=>x.id===e.id)||e))}</span>`:''}</div><button class="edit" data-id="${esc(e.id)}">수정</button></li>`).join('')}</ul>`;
 }
 
 function renderUp(){
   const t=parse(todayKey());const end=new Date(t);end.setDate(t.getDate()+7);
   const tk=key(t),ek=key(end);
-  const all=events.filter(e=>e.date>=tk&&e.date<ek).sort(sortEv);
+  const all=[];for(let i=0;i<7;i++){const dd=new Date(t);dd.setDate(t.getDate()+i);all.push(...onDay(key(dd)))}
   const LIMIT=7;const list=upOpen?all:all.slice(0,LIMIT);
   const days=[];for(const e of list){const g=days[days.length-1];if(g&&g.k===e.date)g.items.push(e);else days.push({k:e.date,items:[e]})}
   $('upcoming').innerHTML=days.length?days.map(g=>{const d=parse(g.k);const diff=Math.round((d-t)/864e5);const rel=diff===0?'오늘':diff===1?'내일':diff===2?'모레':'';
@@ -334,17 +351,17 @@ $('dayPanel').addEventListener('click',async ev=>{
   const t=ev.target;
   if(t.classList.contains('edit')){const e=events.find(x=>x.id===t.dataset.id);if(e){editing={...e};renderDay()}}
   else if(t.id==='fCancel'){editing=null;renderDay()}
-  else if(t.id==='fDel'){const e=events.find(x=>x.id===editing.id);if(e&&await remove(e.id)){editing=null;render();toast('“'+e.title+'” 일정을 지웠어요.',async()=>{if(await save(e)){sel=e.date;goMonth(sel);render()}})}}
+  else if(t.id==='fDel'){const e=events.find(x=>x.id===editing.id);if(e&&await remove(e.id)){editing=null;render();toast('“'+e.title+'”'+(e.rep?' 반복 일정을 모두':' 일정을')+' 지웠어요.',async()=>{if(await save(e)){sel=e.date;goMonth(sel);render()}})}}
 });
 $('dayPanel').addEventListener('submit',async ev=>{
   ev.preventDefault();
-  const title=$('fTitle').value.trim(),date=$('fDate').value,start=$('fStart').value;
+  const title=$('fTitle').value.trim(),date=$('fDate').value,start=$('fStart').value,rp=$('fRep').value;
   const err=$('fErr');
   const fail=m=>{err.textContent=m;err.hidden=false};
   if(!title)return fail('제목을 적어 주세요.');
   if(!okDate(date))return fail('날짜를 골라 주세요.');
   const id=editing.id||('e'+Date.now().toString(36)+Math.random().toString(36).slice(2,7));
-  const e=clean({title,date,start,end:'',cat:'etc',memo:''},id);
+  const e=clean({title,date,start,end:'',cat:'etc',memo:'',rep:rp},id);
   if(e&&await save(e)){editing=null;sel=date;goMonth(date);render()}
 });
 $('undo').onclick=async()=>{const f=undoFn;undoFn=null;$('toast').classList.remove('show');if(f)await f()};
@@ -354,18 +371,46 @@ function load(){
   try{const raw=JSON.parse(localStorage.getItem('cal-events')||'[]');events=(Array.isArray(raw)?raw:[]).map(r=>clean(r||{},String((r&&r.id)||''))).filter(e=>e&&e.id)}catch(e){events=[]}
   setStatus('');render();
 }
-$('exp').onclick=()=>{
-  const blob=new Blob([JSON.stringify(events,null,1)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='내일정-백업-'+todayKey()+'.json';
+// ---------- 백업 (비밀번호가 있으면 AES-GCM으로 암호화) ----------
+const b64=buf=>btoa(String.fromCharCode(...new Uint8Array(buf)));
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function pwKey(pw,salt){
+  const base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:250000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+async function seal(text,pw){
+  const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},await pwKey(pw,salt),new TextEncoder().encode(text));
+  return JSON.stringify({app:'내일정',v:1,enc:'AES-GCM',salt:b64(salt),iv:b64(iv),data:b64(ct)});
+}
+async function unseal(o,pw){
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(o.iv)},await pwKey(pw,unb64(o.salt)),unb64(o.data));
+  return new TextDecoder().decode(pt);
+}
+$('exp').onclick=async()=>{
+  const pw=$('bkPw').value;let text=JSON.stringify(events,null,1),locked=false;
+  if(pw){
+    if(!window.crypto||!crypto.subtle){setStatus('이 화면에서는 암호화를 쓸 수 없어요. 홈 화면 앱에서 다시 시도해 주세요.');return}
+    text=await seal(text,pw);locked=true;
+  }
+  const blob=new Blob([text],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='내일정-백업-'+todayKey()+(locked?'-암호':'')+'.json';
   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  toast(locked?'비밀번호로 잠근 백업 파일을 받았어요. 비밀번호를 잊으면 열 수 없어요.':'백업 파일을 받았어요.');
 };
 $('imp').onchange=async ev=>{
   const f=ev.target.files[0];ev.target.value='';if(!f)return;
-  try{const raw=JSON.parse(await f.text());if(!Array.isArray(raw))throw 0;
-    const got=raw.map(r=>clean(r||{},String((r&&r.id)||''))).filter(e=>e&&e.id&&/^[\w-]{1,40}$/.test(e.id));
-    const ids=new Set(got.map(e=>e.id));events=events.filter(e=>!ids.has(e.id)).concat(got);
-    if(persist()){render();toast('일정 '+got.length+'개를 불러왔어요.')}
-  }catch(e){setStatus('백업 파일을 읽지 못했어요. 이 앱에서 받은 .json 파일인지 확인해 주세요.')}
+  let raw;
+  try{raw=JSON.parse(await f.text())}catch(e){setStatus('백업 파일을 읽지 못했어요. 이 앱에서 받은 .json 파일인지 확인해 주세요.');return}
+  if(raw&&raw.enc){
+    const pw=$('bkPw').value;
+    if(!pw){setStatus('비밀번호로 잠긴 백업이에요. 위 칸에 비밀번호를 넣고 다시 불러와 주세요.');$('bkPw').focus();return}
+    try{raw=JSON.parse(await unseal(raw,pw))}catch(e){setStatus('비밀번호가 맞지 않아요.');return}
+  }
+  if(!Array.isArray(raw)){setStatus('백업 파일을 읽지 못했어요. 이 앱에서 받은 .json 파일인지 확인해 주세요.');return}
+  const got=raw.map(r=>clean(r||{},String((r&&r.id)||''))).filter(e=>e&&e.id&&/^[\w-]{1,40}$/.test(e.id));
+  const ids=new Set(got.map(e=>e.id));events=events.filter(e=>!ids.has(e.id)).concat(got);
+  if(persist()){setStatus('');render();toast('일정 '+got.length+'개를 불러왔어요.')}
 };
 // 한 줄 일정 해석기: "11월 25일에 심우용 선임과 점심 12시 반" → {date, start, end, title, cat}
 function parseQuick(text, now){
@@ -375,12 +420,19 @@ function parseQuick(text, now){
   const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
   let s = ' ' + String(text || '').trim() + ' ';
   const cut = re => { const r = s.match(re); if (r) s = s.slice(0, r.index) + ' ' + s.slice(r.index + r[0].length); return r; };
-  const P = '\\s*(?:에는|에서|에|엔|날)?';
+  const P = '\\s*(?:에는|에서|에|엔|날|마다)?';
   let y = today.getFullYear(), yearGiven = false, m = null, d = null, date = null, r, err = '';
 
   // 연도
   if ((r = cut(/(\d{4})\s*년\s*/))) { y = +r[1]; yearGiven = true; }
   else if ((r = cut(/(내년|올해)\s*/))) { if (r[1] === '내년') y++; yearGiven = true; }
+
+  // 반복 ("매일", "매주 월요일", "매월 25일", "매년 3월 2일")
+  let rep = '';
+  if ((r = cut(/매\s*일(?!\s*요일)\s*/))) rep = 'd';
+  else if ((r = cut(/매\s*주\s*/))) rep = 'w';
+  else if ((r = cut(/매\s*(?:월|달)(?!\s*요일)\s*/))) rep = 'm';
+  else if ((r = cut(/매\s*년\s*/))) rep = 'y';
 
   // 날짜
   if ((r = cut(new RegExp('(\\d{1,2})\\s*월\\s*(\\d{1,2})\\s*일' + P)))) { m = +r[1]; d = +r[2]; }
@@ -394,9 +446,16 @@ function parseQuick(text, now){
     else { date = addDays(monday, idx); if (date < today) date = addDays(date, 7); }  // 가장 가까운 그 요일
   }
   if (m !== null) {
+    if (!yearGiven && m < today.getMonth() + 1) y++;   // 이미 지난 달이면 내년
     date = new Date(y, m - 1, d);
     if (m < 1 || m > 12 || d < 1 || date.getMonth() !== m - 1) { err = m + '월 ' + d + '일은 없는 날짜예요.'; date = null; }
   } else if (date && yearGiven) date.setFullYear(y);
+  // 반복 일정의 첫 날짜: 정하지 않았으면 오늘부터, 이미 지났으면 다음 차례로
+  if (rep && !err) {
+    if (!date) date = new Date(today);
+    if (rep === 'm' && date < today) date = new Date(date.getFullYear(), date.getMonth() + 1, date.getDate());
+    if (rep === 'y' && date < today) date = new Date(date.getFullYear() + 1, date.getMonth(), date.getDate());
+  }
 
   // 시간 (최대 2개: 시작, 종료)
   const times = [];
@@ -441,11 +500,11 @@ function parseQuick(text, now){
     : /점심|저녁|약속|모임|만나|만남|술|식사|커피|회식|생일|결혼/.test(title) ? 'meet'
     : /병원|치과|운동|헬스|요가|필라테스|미용|은행|공부|독서|생신|기념일/.test(title) ? 'me' : 'etc';
 
-  return {date: date ? k2(date) : '', dateFound: !!date || !!err, start, end, title, cat, err};
+  return {date: date ? k2(date) : '', dateFound: !!date || !!err, start, end, title, cat, err, rep};
 }
 
 const qMsg=(html)=>{$('qPrev').innerHTML=html};
-const qDesc=q=>{const d=parse(q.date);return `<b>${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})</b>${q.start?' · <b>'+esc(fmtT(q.start))+'</b>':''} · ${esc(q.title)}`};
+const qDesc=q=>{const d=parse(q.date);return (q.rep?`<b>↻ ${esc(REP_TXT(q))}</b> (${d.getMonth()+1}월 ${d.getDate()}일부터)`:`<b>${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})</b>`)+`${q.start?' · <b>'+esc(fmtT(q.start))+'</b>':''} · ${esc(q.title)}`};
 function quickParse(){
   const q=parseQuick($('qIn').value);
   if(!q.date&&!q.err)q.date=sel;   // 날짜가 없으면 지금 고른 날짜로
@@ -463,14 +522,14 @@ $('quick').addEventListener('submit',async ev=>{
   const q=quickParse();
   if(q.err||!q.title){$('qIn').dispatchEvent(new Event('input'));return}
   const id='e'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-  const e=clean({title:q.title,date:q.date,start:q.start,end:'',cat:'etc',memo:''},id);
+  const e=clean({title:q.title,date:q.date,start:q.start,end:'',cat:'etc',memo:'',rep:q.rep},id);
   if(e&&await save(e)){
     sel=e.date;goMonth(sel);editing=null;render();
     $('qIn').value='';$('qIn').dispatchEvent(new Event('input'));
     toast(qDescText(e)+' 추가했어요.',async()=>{if(await remove(e.id))render()});
   }
 });
-const qDescText=e=>{const d=parse(e.date);return `${d.getMonth()+1}월 ${d.getDate()}일에 “${e.title}”`};
+const qDescText=e=>{const d=parse(e.date);return e.rep?`${REP_TXT(e)} “${e.title}”`:`${d.getMonth()+1}월 ${d.getDate()}일에 “${e.title}”`};
 // ---------- 날씨 (Open-Meteo, 위치 이름은 BigDataCloud) ----------
 const WX=c=>c===0||c===1?['맑음','sun']:c===2?['구름 조금','part']:c===3?['흐림','cloud']:c===45||c===48?['안개','fog']
   :c>=51&&c<=57?['이슬비','rain']:c>=61&&c<=67?['비','rain']:c>=71&&c<=77?['눈','snow']:c>=80&&c<=82?['소나기','rain']:c===85||c===86?['눈','snow']:c>=95?['뇌우','storm']:['날씨','cloud'];
