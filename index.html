@@ -76,21 +76,21 @@ h1 small{display:block;font:500 15px/1.4 "Noto Sans KR",sans-serif;color:var(--m
 .cell:hover{background:var(--paper)}
 .chip{font-size:12px;line-height:1.35;padding:2px 6px;border-radius:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;background:var(--c)}
 @media(max-width:600px){.ct{display:none}}
-.more{font-size:12px;color:var(--mute);padding-left:4px}
+.more{font-size:12px;font-weight:700;color:var(--mute);padding-left:4px}.more.m{display:none}
 .dots{display:none;gap:3px;flex-wrap:wrap;padding-left:4px}.dots i{width:6px;height:6px;border-radius:50%;background:var(--c)}
 aside{display:grid;gap:18px}
 .panel{border:1px solid var(--line);border-radius:16px;padding:18px}
 .panel h2{font:700 22px/1.2 "Gothic A1",sans-serif;margin:0 0 4px}
 .panel .sub{color:var(--mute);font-size:14px;margin:0 0 14px}
 .list{list-style:none;margin:0;padding:0;display:grid;gap:2px}
-.ev{display:grid;grid-template-columns:4.6em minmax(0,1fr) auto;gap:10px;align-items:start;padding:10px 0;border-top:1px solid var(--line)}
+.ev{display:grid;grid-template-columns:6em minmax(0,1fr) auto;gap:14px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
 .ev:first-child{border-top:0}
-.time{font:700 17px/1.3 "Gothic A1",sans-serif;white-space:nowrap}
+.time{font:700 17px/1.3 "Gothic A1",sans-serif;white-space:nowrap;font-variant-numeric:tabular-nums}
 .time span{display:block;font:500 13px/1.3 "Noto Sans KR",sans-serif;color:var(--mute)}
 .ev b{display:block;font-weight:700;overflow-wrap:anywhere}
 .ev p{margin:2px 0 0;font-size:14px;color:var(--mute);overflow-wrap:anywhere;white-space:pre-wrap}
 .tag{display:inline-block;font-size:12px;font-weight:700;color:var(--c);margin-top:2px}
-.ev .edit{min-height:44px;padding:0 12px;border:0;background:none;color:var(--mute);border-radius:8px}
+.ev .edit{min-height:44px;margin-right:-8px;padding:0 12px;border:0;background:none;color:var(--mute);border-radius:8px}
 .ev .edit:hover{background:var(--paper);color:var(--ink)}
 .empty{color:var(--mute);font-size:15px;padding:10px 0}
 form{display:grid;gap:12px}
@@ -122,7 +122,7 @@ h1{font-size:clamp(24px,7.4vw,32px)}
 .wx .ds>span,.wx .pl,.wx .ask{display:none}
 .wx .btn{min-height:36px;padding:0 10px;font-size:13px}
 .mon b{font-size:20px}}
-@media(max-width:600px){.cell{min-height:76px;padding:3px 2px;align-items:stretch;gap:2px}.num{font-size:13px;width:24px;height:24px;margin:0 auto}.chip{font-size:10.5px;line-height:1.3;padding:2px 3px;border-radius:4px;white-space:normal;word-break:keep-all;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3}.chip:nth-of-type(n+3){display:none}.more{font-size:10px;padding:0;text-align:center}.dow div{text-align:center;padding:8px 2px}.quick{grid-template-columns:minmax(0,1fr) auto}}
+@media(max-width:600px){.cell{min-height:76px;padding:3px 2px;align-items:stretch;gap:2px}.num{font-size:13px;width:24px;height:24px;margin:0 auto}.chip{font-size:10.5px;line-height:1.3;padding:2px 3px;border-radius:4px;white-space:normal;word-break:keep-all;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3}.chip.x{display:none}.more.d{display:none}.more.m{display:block}.more.m{font-size:11px;padding:0;text-align:center;color:var(--ink)}.dow div{text-align:center;padding:8px 2px}.quick{grid-template-columns:minmax(0,1fr) auto}}
 </style>
 </head>
 <body>
@@ -195,8 +195,8 @@ function renderCal(){
     const d=new Date(start);d.setDate(start.getDate()+i);const k=key(d);
     const list=onDay(k);const w=d.getDay();
     const cls=['cell',d.getMonth()!==view.getMonth()?'out':'',w===0?'sun':'',w===6?'sat':'',k===t?'today':'',k===sel?'on':''].join(' ');
-    const chips=list.slice(0,3).map(e=>`<span class="chip" style="--c:var(--c-work)">${e.start?'<span class="ct">'+esc(fmtT(e.start).replace(/^오[전후] /,''))+' </span>':''}${esc(e.title)}</span>`).join('');
-    const more=list.length>3?`<span class="more">+${list.length-3}</span>`:'';
+    const chips=list.slice(0,3).map((e,i)=>`<span class="chip${i?' x':''}" style="--c:var(--c-work)">${e.start?'<span class="ct">'+esc(fmtT(e.start).replace(/^오[전후] /,''))+' </span>':''}${esc(e.title)}</span>`).join('');
+    const more=(list.length>1?`<span class="more m">+${list.length-1}</span>`:'')+(list.length>3?`<span class="more d">+${list.length-3}</span>`:'');
     const dots=list.length?`<span class="dots">${list.slice(0,4).map(e=>`<i style="--c:var(--c-work)"></i>`).join('')}</span>`:'';
     h+=`<button class="${cls}" data-k="${k}" aria-label="${d.getMonth()+1}월 ${d.getDate()}일, 일정 ${list.length}개"><span class="num">${d.getDate()}</span>${chips}${more}${dots}</button>`;
   }
@@ -334,7 +334,8 @@ function parseQuick(text, now){
     if (h > 24 || min > 59) break;
     // 뒤에 붙은 "부터/까지/에/~" 함께 지우기
     const tail = s.slice(t.index + t[0].length).match(/^\s*(?:부터|까지|에|~|-|–)?/)[0];
-    const keep = /점심|저녁/.test(t[1] || '') ? t[1] : '';   // "점심", "저녁"은 제목에 남기기
+    const rest = s.slice(0, t.index) + s.slice(t.index + t[0].length);
+    const keep = /점심|저녁/.test(t[1] || '') && !rest.includes(t[1]) ? t[1] : '';   // 제목에 이미 있으면 중복으로 넣지 않기   // "점심", "저녁"은 제목에 남기기
     s = s.slice(0, t.index) + ' ' + keep + ' ' + s.slice(t.index + t[0].length + tail.length);
     times.push({h, min, ampm});
   }
