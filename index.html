@@ -37,7 +37,6 @@ button{cursor:pointer}
 .backup{display:flex;flex-wrap:wrap;gap:8px}.backup input{display:none}
 header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 20px;margin-bottom:18px}
 h1{font:800 clamp(32px,5vw,50px)/1.05 "Gothic A1",sans-serif;margin:0;letter-spacing:-.02em;text-wrap:balance}
-h1{cursor:pointer}
 h1 small{display:block;font:500 15px/1.4 "Noto Sans KR",sans-serif;color:var(--mute);margin-bottom:6px;letter-spacing:0}
 .nav{display:flex;gap:8px;flex-wrap:wrap}
 .btn{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--bg);font-weight:500}
@@ -50,6 +49,16 @@ h1 small{display:block;font:500 15px/1.4 "Noto Sans KR",sans-serif;color:var(--m
 .quick .btn{min-height:54px;border-radius:14px;padding:0 22px;font-size:16px}
 .qPrev{grid-column:1/-1;margin:0;font-size:14px;color:var(--mute);min-height:1.55em}
 .qPrev b{color:var(--ink)}.qPrev .bad{color:var(--red)}
+.mon{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px;padding:14px 16px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+.mon b{font:800 24px/1.1 "Gothic A1",sans-serif}
+.mon span{font-size:13px;color:var(--mute)}
+.cal{touch-action:pan-y}
+.wx{display:flex;align-items:center;gap:12px;min-height:72px;padding:10px 16px;border:1px solid var(--line);border-radius:16px;max-width:100%}
+.wx svg{width:46px;height:46px;flex:none}
+.wx .tp{font:800 34px/1 "Gothic A1",sans-serif;white-space:nowrap}
+.wx .ds{display:grid;gap:2px;font-size:13px;color:var(--mute);line-height:1.35}
+.wx .ds b{color:var(--ink);font-size:15px}
+.wx .btn{white-space:nowrap}
 .status{font-size:14px;color:var(--mute);margin:-6px 0 14px;min-height:0}
 .status:empty{display:none}
 .main{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:22px;align-items:start}
@@ -103,14 +112,16 @@ textarea{min-height:76px;resize:vertical}
 .toast span{min-width:0}.toast button{flex:none;white-space:nowrap;min-height:40px;border:0;border-radius:8px;padding:0 14px;background:var(--bg);color:var(--ink);font-weight:700}
 @media(prefers-reduced-motion:reduce){.toast{transition:none}}
 @media(max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){header{align-items:stretch}.wx{width:100%}.mon b{font-size:20px}}
 @media(max-width:600px){.cell{min-height:76px;padding:3px 2px;align-items:stretch;gap:2px}.num{font-size:13px;width:24px;height:24px;margin:0 auto}.chip{font-size:10.5px;line-height:1.3;padding:2px 3px;border-radius:4px;white-space:normal;word-break:keep-all;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3}.chip:nth-of-type(n+3){display:none}.more{font-size:10px;padding:0;text-align:center}.dow div{text-align:center;padding:8px 2px}.quick{grid-template-columns:minmax(0,1fr) auto}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1 id="title"><small>나의 일정</small><span id="ym"></span></h1>
-</header>
+    <h1 id="title"><small id="tYear"></small><span id="tDate"></span></h1>
+    <div class="wx" id="wx" aria-live="polite"></div>
+  </header>
   <form class="quick" id="quick" autocomplete="off">
     <input id="qIn" placeholder="예) ○○일 △△△과 점심" enterkeyhint="done" aria-label="일정을 한 줄로 입력">
     <button class="btn pri">추가</button>
@@ -119,6 +130,7 @@ textarea{min-height:76px;resize:vertical}
   <p class="status" id="status"></p>
   <div class="main">
     <section class="cal" aria-label="달력">
+      <div class="mon"><b id="ym"></b><span>옆으로 밀면 다른 달 · 누르면 이번 달</span></div>
       <div class="dow"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
       <div class="grid" id="grid"></div>
     </section>
@@ -215,7 +227,8 @@ function renderUp(){
     return `<li class="ev"><div class="d">${d.getMonth()+1}/${d.getDate()}<span>${rel}</span></div><div><b>${esc(e.title)}</b><span class="tag" style="--c:var(${CATS[e.cat].v})">${CATS[e.cat].n}${e.start?' · '+esc(fmtT(e.start)):''}</span></div></li>`}).join('')
     :'<li class="empty">이번 주에는 예정된 일정이 없어요.</li>';
 }
-function render(){renderCal();renderDay();renderUp()}
+function renderHead(){const t=new Date();$('tYear').textContent=t.getFullYear()+'년 · 나의 일정';$('tDate').textContent=(t.getMonth()+1)+'월 '+t.getDate()+'일 '+DOW[t.getDay()]+'요일'}
+function render(){renderHead();renderCal();renderDay();renderUp()}
 
 function persist(){try{localStorage.setItem('cal-events',JSON.stringify(events));return true}catch(e){setStatus('저장 공간에 쓰지 못했어요. 사파리의 개인정보 보호 브라우징이 켜져 있는지 확인해 주세요.');return false}}
 async function save(e){events=events.filter(x=>x.id!==e.id).concat(e);return persist()}
@@ -225,12 +238,16 @@ function toast(msg,fn){undoFn=fn||null;$('undo').hidden=!fn;$('toastMsg').textCo
 function openNew(k){sel=k||sel;editing={date:sel,cat:'work'};render()}
 function goMonth(k){const d=parse(k);view=new Date(d.getFullYear(),d.getMonth(),1)}
 
-{let sx=0,sy=0;const cal=document.querySelector('.cal');
-cal.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
-cal.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;
-  if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5){view.setMonth(view.getMonth()+(dx<0?1:-1));renderCal()}},{passive:true});}
+let dragged=false;
+{let sx=null,sy=0;const cal=document.querySelector('.cal');
+cal.addEventListener('pointerdown',e=>{sx=e.clientX;sy=e.clientY;dragged=false});
+cal.addEventListener('pointerup',e=>{if(sx===null)return;const dx=e.clientX-sx,dy=e.clientY-sy;sx=null;
+  if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5){dragged=true;view.setMonth(view.getMonth()+(dx<0?1:-1));renderCal()}});
+cal.addEventListener('pointercancel',()=>{sx=null});}
+document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)||editing)return;
+  if(e.key==='ArrowLeft'||e.key==='ArrowRight'){view.setMonth(view.getMonth()+(e.key==='ArrowRight'?1:-1));renderCal()}});
 $('ym').parentElement.onclick=()=>{sel=todayKey();goMonth(sel);editing=null;render()};
-$('grid').onclick=ev=>{const c=ev.target.closest('.cell');if(!c)return;sel=c.dataset.k;if(parse(sel).getMonth()!==view.getMonth())goMonth(sel);editing=null;render()};
+$('grid').onclick=ev=>{if(dragged){dragged=false;return}const c=ev.target.closest('.cell');if(!c)return;sel=c.dataset.k;if(parse(sel).getMonth()!==view.getMonth())goMonth(sel);editing=null;render()};
 $('dayPanel').addEventListener('click',async ev=>{
   const t=ev.target;
   if(t.classList.contains('edit')){const e=events.find(x=>x.id===t.dataset.id);if(e){editing={...e};renderDay()}}
@@ -369,6 +386,49 @@ $('quick').addEventListener('submit',async ev=>{
   }
 });
 const qDescText=e=>{const d=parse(e.date);return `${d.getMonth()+1}월 ${d.getDate()}일에 “${e.title}”`};
+// ---------- 날씨 (Open-Meteo, 위치 이름은 BigDataCloud) ----------
+const WX=c=>c===0||c===1?['맑음','sun']:c===2?['구름 조금','part']:c===3?['흐림','cloud']:c===45||c===48?['안개','fog']
+  :c>=51&&c<=57?['이슬비','rain']:c>=61&&c<=67?['비','rain']:c>=71&&c<=77?['눈','snow']:c>=80&&c<=82?['소나기','rain']:c===85||c===86?['눈','snow']:c>=95?['뇌우','storm']:['날씨','cloud'];
+const ICON={
+  sun:'<circle cx="24" cy="24" r="9" fill="#f5a623"/><g stroke="#f5a623" stroke-width="3" stroke-linecap="round"><path d="M24 4v6M24 38v6M4 24h6M38 24h6M9.9 9.9l4.2 4.2M33.9 33.9l4.2 4.2M9.9 38.1l4.2-4.2M33.9 14.1l4.2-4.2"/></g>',
+  part:'<circle cx="18" cy="18" r="8" fill="#f5a623"/><path d="M15 38h20a8 8 0 0 0 0-16 11 11 0 0 0-21 3 6.5 6.5 0 0 0 1 13z" fill="#aab2bf"/>',
+  cloud:'<path d="M13 37h22a9 9 0 0 0 0-18 12 12 0 0 0-23 3 7.5 7.5 0 0 0 1 15z" fill="#8f98a6"/>',
+  fog:'<path d="M13 28h22a8 8 0 0 0 0-16 11 11 0 0 0-21 3 6.5 6.5 0 0 0-1 13z" fill="#aab2bf"/><g stroke="#8f98a6" stroke-width="3" stroke-linecap="round"><path d="M8 34h32M12 41h24"/></g>',
+  rain:'<path d="M13 29h22a8 8 0 0 0 0-16 11 11 0 0 0-21 3 6.5 6.5 0 0 0-1 13z" fill="#8f98a6"/><g stroke="#2563d9" stroke-width="3" stroke-linecap="round"><path d="M16 34l-3 7M25 34l-3 7M34 34l-3 7"/></g>',
+  snow:'<path d="M13 29h22a8 8 0 0 0 0-16 11 11 0 0 0-21 3 6.5 6.5 0 0 0-1 13z" fill="#aab2bf"/><g fill="#6d9bff"><circle cx="15" cy="37" r="2.6"/><circle cx="24" cy="41" r="2.6"/><circle cx="33" cy="37" r="2.6"/></g>',
+  storm:'<path d="M13 28h22a8 8 0 0 0 0-16 11 11 0 0 0-21 3 6.5 6.5 0 0 0-1 13z" fill="#6f7886"/><path d="M26 30l-7 9h6l-3 8 9-11h-6l3-6z" fill="#f5a623"/>'};
+const wxBox=$('wx');
+const wxAsk=msg=>{wxBox.innerHTML=`<span class="ds">${esc(msg)}</span><button class="btn" id="wxBtn">현재 위치 날씨 보기</button>`;$('wxBtn').onclick=()=>wxLocate()};
+function wxShow(w){
+  const [name,ic]=WX(w.code);
+  wxBox.innerHTML=`<svg viewBox="0 0 48 48" aria-hidden="true">${ICON[ic]}</svg><span class="tp">${Math.round(w.temp)}°</span><span class="ds"><b>${esc(w.place||'현재 위치')} · ${name}</b><span>최고 ${Math.round(w.max)}° / 최저 ${Math.round(w.min)}°${w.pop!=null?' · 강수 '+Math.round(w.pop)+'%':''}</span></span>`;
+}
+async function wxFetch(lat,lon){
+  const ctl=new AbortController();const tm=setTimeout(()=>ctl.abort(),8000);
+  try{
+    const u=`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(3)}&longitude=${lon.toFixed(3)}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=1`;
+    const j=await (await fetch(u,{signal:ctl.signal})).json();
+    let place='';
+    try{const g=await (await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=ko`,{signal:ctl.signal})).json();place=String(g.locality||g.city||g.principalSubdivision||'').slice(0,30)}catch(e){}
+    const w={temp:+j.current.temperature_2m,code:+j.current.weather_code,max:+j.daily.temperature_2m_max[0],min:+j.daily.temperature_2m_min[0],pop:j.daily.precipitation_probability_max?.[0]??null,place,at:Date.now(),lat,lon};
+    if(!isFinite(w.temp))throw 0;
+    try{localStorage.setItem('wx-cache',JSON.stringify(w))}catch(e){}
+    wxShow(w);
+  }catch(e){wxAsk('날씨를 가져오지 못했어요.')}finally{clearTimeout(tm)}
+}
+function wxLocate(){
+  if(!navigator.geolocation)return wxAsk('이 기기에서는 위치를 쓸 수 없어요.');
+  wxBox.innerHTML='<span class="ds">현재 위치를 확인하는 중…</span>';
+  navigator.geolocation.getCurrentPosition(pos=>{try{localStorage.setItem('wx-ok','1')}catch(e){}wxFetch(pos.coords.latitude,pos.coords.longitude)},
+    err=>{try{localStorage.removeItem('wx-ok')}catch(e){}wxAsk(err.code===1?'위치 권한을 허용하면 날씨가 보여요.':'위치를 찾지 못했어요.')},
+    {enableHighAccuracy:false,timeout:10000,maximumAge:30*60000});
+}
+(function wxInit(){
+  let c=null,ok=false;try{c=JSON.parse(localStorage.getItem('wx-cache')||'null');ok=localStorage.getItem('wx-ok')==='1'}catch(e){}
+  if(c&&Date.now()-c.at<30*60000)return wxShow(c);   // 30분 안에 받은 날씨는 그대로
+  if(c)wxShow(c);
+  if(ok)wxLocate();else if(!c)wxAsk('오늘 날씨');
+})();
 load();
 if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
 }
