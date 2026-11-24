@@ -684,7 +684,16 @@ events=store.get('cal-events',[]);
 events=(Array.isArray(events)?events:[]).map(r=>clean(r||{},String((r&&r.id)||''))).filter(Boolean);
 reindex();render();qPreview();wxInit();
 if(location.hash==='#invest')showTab('inv');
-if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+// 앱을 다시 열 때마다 새 버전이 있는지 확인하고, 있으면 한 번 새로고침
+if('serviceWorker' in navigator){
+  const hadSW=!!navigator.serviceWorker.controller;let reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(hadSW&&!reloaded&&!editing&&!$('qIn').value){reloaded=true;location.reload()}});
+  addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')reg.update().catch(()=>{})});
+  }).catch(()=>{}));
+}
+// 날짜가 바뀐 채로 앱이 켜져 있으면 오늘 날짜 다시 그리기
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&$('tDate').textContent.indexOf(new Date().getDate()+'일')<0){sel=todayKey();goMonth(sel);render()}});
 }
 </script>
 </body>
