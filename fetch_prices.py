@@ -57,9 +57,10 @@ def main():
         watch = json.load(f)
     try:
         with open("prices.json", encoding="utf-8") as f:
-            old = {i["symbol"]: i for i in json.load(f).get("items", [])}
+            old_items = json.load(f).get("items", [])
     except (OSError, ValueError):
-        old = {}
+        old_items = []
+    old = {i["symbol"]: i for i in old_items}
 
     items, failed = [], []
     for w in watch:
@@ -87,10 +88,14 @@ def main():
         })
         time.sleep(1)
 
+    # 종가가 하나도 안 바뀌었으면 파일을 그대로 둬서 쓸데없는 저장(커밋)이 생기지 않게 합니다
+    if items == old_items:
+        print(f"바뀐 종가가 없어요 ({len(items)}개 확인)")
+        return
     out = {"updated": datetime.now(KST).isoformat(timespec="minutes"), "items": items, "failed": failed}
     with open("prices.json", "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=1)
-    print(f"완료: {len(items)}개, 실패: {failed}")
+    print(f"저장: {len(items)}개, 실패: {failed}")
 
 
 if __name__ == "__main__":

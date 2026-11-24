@@ -1,5 +1,5 @@
 // 인터넷이 없어도 앱이 열리도록 파일을 보관해 두는 서비스 워커
-const CACHE = 'cal-v2';
+const CACHE = 'cal-v3';
 const FILES = ['./', './index.html', './manifest.json', './icon-180.png', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
