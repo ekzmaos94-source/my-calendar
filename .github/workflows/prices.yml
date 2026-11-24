@@ -1,0 +1,27 @@
+# 관심 종목 종가를 매일 받아 prices.json으로 저장하는 자동 작업
+name: 관심 종목 종가 업데이트
+
+on:
+  schedule:
+    - cron: "30 7 * * 1-5"    # 한국 장 마감 후 (한국 시간 오후 4:30)
+    - cron: "30 22 * * 1-5"   # 미국 장 마감 후 (한국 시간 다음 날 오전 7:30)
+  push:
+    paths: ["watchlist.json"]  # 종목 목록을 바꾸면 바로 실행
+  workflow_dispatch:           # Actions 탭에서 직접 실행 버튼
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 종가 받아오기
+        run: python3 fetch_prices.py
+      - name: 바뀐 내용 저장
+        run: |
+          git config user.name "price-bot"
+          git config user.email "price-bot@users.noreply.github.com"
+          git add prices.json
+          git diff --cached --quiet || (git commit -m "종가 업데이트" && git push)
