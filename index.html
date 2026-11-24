@@ -195,9 +195,9 @@ function renderCal(){
     const d=new Date(start);d.setDate(start.getDate()+i);const k=key(d);
     const list=onDay(k);const w=d.getDay();
     const cls=['cell',d.getMonth()!==view.getMonth()?'out':'',w===0?'sun':'',w===6?'sat':'',k===t?'today':'',k===sel?'on':''].join(' ');
-    const chips=list.slice(0,3).map(e=>`<span class="chip" style="--c:var(${CATS[e.cat].v})">${e.start?'<span class="ct">'+esc(fmtT(e.start).replace(/^오[전후] /,''))+' </span>':''}${esc(e.title)}</span>`).join('');
+    const chips=list.slice(0,3).map(e=>`<span class="chip" style="--c:var(--c-work)">${e.start?'<span class="ct">'+esc(fmtT(e.start).replace(/^오[전후] /,''))+' </span>':''}${esc(e.title)}</span>`).join('');
     const more=list.length>3?`<span class="more">+${list.length-3}</span>`:'';
-    const dots=list.length?`<span class="dots">${list.slice(0,4).map(e=>`<i style="--c:var(${CATS[e.cat].v})"></i>`).join('')}</span>`:'';
+    const dots=list.length?`<span class="dots">${list.slice(0,4).map(e=>`<i style="--c:var(--c-work)"></i>`).join('')}</span>`:'';
     h+=`<button class="${cls}" data-k="${k}" aria-label="${d.getMonth()+1}월 ${d.getDate()}일, 일정 ${list.length}개"><span class="num">${d.getDate()}</span>${chips}${more}${dots}</button>`;
   }
   $('grid').innerHTML=h;
@@ -213,9 +213,7 @@ function renderDay(){
     <form id="f" novalidate>
       <label>제목<input id="fTitle" maxlength="120" required value="${esc(e.title||'')}" placeholder="예) 치과 예약"></label>
       <label>날짜<input id="fDate" type="date" required value="${esc(e.date||sel)}"></label>
-      <div class="row"><label>시작<input id="fStart" type="time" value="${esc(e.start||'')}"></label><label>종료<input id="fEnd" type="time" value="${esc(e.end||'')}"></label></div>
-      <div class="cats" role="radiogroup" aria-label="분류">${Object.entries(CATS).map(([c,v])=>`<label style="--c:var(${v.v})"><input type="radio" name="cat" value="${c}" ${catOf(e.cat)===c?'checked':''}>${v.n}</label>`).join('')}</div>
-      <label>메모<textarea id="fMemo" maxlength="1000" placeholder="장소, 준비물 등">${esc(e.memo||'')}</textarea></label>
+      <label>시작 시간<input id="fStart" type="time" value="${esc(e.start||'')}"></label>
       <p class="err" id="fErr" hidden></p>
       <div class="acts">${isNew?'':'<button type="button" class="btn dan" id="fDel">삭제</button>'}<button type="button" class="btn" id="fCancel">취소</button><button class="btn pri">저장</button></div>
     </form>`;
@@ -225,7 +223,7 @@ function renderDay(){
   const list=onDay(sel);
   p.hidden=!list.length;
   if(!list.length){p.innerHTML='';return}
-  p.innerHTML=`<p class="sub" style="margin-bottom:4px">${d.getMonth()+1}월 ${d.getDate()}일 일정</p><ul class="list">${list.map(e=>`<li class="ev"><div class="time">${e.start?esc(fmtT(e.start)):'하루 종일'}${e.end?`<span>~ ${esc(fmtT(e.end))}</span>`:''}</div><div><b>${esc(e.title)}</b><span class="tag" style="--c:var(${CATS[e.cat].v})">${CATS[e.cat].n}</span>${e.memo?`<p>${esc(e.memo)}</p>`:''}</div><button class="edit" data-id="${esc(e.id)}">수정</button></li>`).join('')}</ul>`;
+  p.innerHTML=`<p class="sub" style="margin-bottom:4px">${d.getMonth()+1}월 ${d.getDate()}일 일정</p><ul class="list">${list.map(e=>`<li class="ev"><div class="time">${e.start?esc(fmtT(e.start)):'하루 종일'}</div><div><b>${esc(e.title)}</b></div><button class="edit" data-id="${esc(e.id)}">수정</button></li>`).join('')}</ul>`;
 }
 
 function renderUp(){
@@ -233,7 +231,7 @@ function renderUp(){
   const tk=key(t),ek=key(end);
   const list=events.filter(e=>e.date>=tk&&e.date<ek).sort(sortEv).slice(0,12);
   $('upcoming').innerHTML=list.length?list.map(e=>{const d=parse(e.date);const rel=e.date===tk?'오늘':(d-t)/864e5===1?'내일':DOW[d.getDay()]+'요일';
-    return `<li class="ev"><div class="d">${d.getMonth()+1}/${d.getDate()}<span>${rel}</span></div><div><b>${esc(e.title)}</b><span class="tag" style="--c:var(${CATS[e.cat].v})">${CATS[e.cat].n}${e.start?' · '+esc(fmtT(e.start)):''}</span></div></li>`}).join('')
+    return `<li class="ev"><div class="d">${d.getMonth()+1}/${d.getDate()}<span>${rel}</span></div><div><b>${esc(e.title)}</b>${e.start?`<span class="tag" style="--c:var(--mute)">${esc(fmtT(e.start))}</span>`:''}</div></li>`}).join('')
     :'<li class="empty">이번 주에는 예정된 일정이 없어요.</li>';
 }
 function renderHead(){const t=new Date();$('tYear').textContent=t.getFullYear()+'년 · 나의 일정';$('tDate').textContent=(t.getMonth()+1)+'월 '+t.getDate()+'일 '+DOW[t.getDay()]+'요일'}
@@ -265,15 +263,13 @@ $('dayPanel').addEventListener('click',async ev=>{
 });
 $('dayPanel').addEventListener('submit',async ev=>{
   ev.preventDefault();
-  const title=$('fTitle').value.trim(),date=$('fDate').value,start=$('fStart').value,end=$('fEnd').value;
-  const cat=(document.querySelector('input[name=cat]:checked')||{}).value||'etc';
+  const title=$('fTitle').value.trim(),date=$('fDate').value,start=$('fStart').value;
   const err=$('fErr');
   const fail=m=>{err.textContent=m;err.hidden=false};
   if(!title)return fail('제목을 적어 주세요.');
   if(!okDate(date))return fail('날짜를 골라 주세요.');
-  if(start&&end&&end<start)return fail('종료 시간이 시작 시간보다 빨라요.');
   const id=editing.id||('e'+Date.now().toString(36)+Math.random().toString(36).slice(2,7));
-  const e=clean({title,date,start,end,cat,memo:$('fMemo').value.trim()},id);
+  const e=clean({title,date,start,end:'',cat:'etc',memo:''},id);
   if(e&&await save(e)){editing=null;sel=date;goMonth(date);render()}
 });
 $('undo').onclick=async()=>{const f=undoFn;undoFn=null;$('toast').classList.remove('show');if(f)await f()};
@@ -369,7 +365,7 @@ function parseQuick(text, now){
 }
 
 const qMsg=(html)=>{$('qPrev').innerHTML=html};
-const qDesc=q=>{const d=parse(q.date);return `<b>${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})</b>${q.start?' · <b>'+esc(fmtT(q.start))+(q.end?' ~ '+esc(fmtT(q.end)):'')+'</b>':''} · ${esc(q.title)} · ${CATS[q.cat].n}`};
+const qDesc=q=>{const d=parse(q.date);return `<b>${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})</b>${q.start?' · <b>'+esc(fmtT(q.start))+'</b>':''} · ${esc(q.title)}`};
 function quickParse(){
   const q=parseQuick($('qIn').value);
   if(!q.date&&!q.err)q.date=sel;   // 날짜가 없으면 지금 고른 날짜로
@@ -387,7 +383,7 @@ $('quick').addEventListener('submit',async ev=>{
   const q=quickParse();
   if(q.err||!q.title){$('qIn').dispatchEvent(new Event('input'));return}
   const id='e'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-  const e=clean({title:q.title,date:q.date,start:q.start,end:q.end,cat:q.cat,memo:''},id);
+  const e=clean({title:q.title,date:q.date,start:q.start,end:'',cat:'etc',memo:''},id);
   if(e&&await save(e)){
     sel=e.date;goMonth(sel);editing=null;render();
     $('qIn').value='';$('qIn').dispatchEvent(new Event('input'));
