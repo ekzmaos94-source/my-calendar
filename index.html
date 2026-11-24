@@ -112,7 +112,16 @@ textarea{min-height:76px;resize:vertical}
 .toast span{min-width:0}.toast button{flex:none;white-space:nowrap;min-height:40px;border:0;border-radius:8px;padding:0 14px;background:var(--bg);color:var(--ink);font-weight:700}
 @media(prefers-reduced-motion:reduce){.toast{transition:none}}
 @media(max-width:900px){.main{grid-template-columns:minmax(0,1fr)}}
-@media(max-width:600px){header{align-items:stretch}.wx{width:100%}.mon b{font-size:20px}}
+@media(max-width:600px){
+header{flex-wrap:nowrap;align-items:flex-end;gap:10px}
+h1{font-size:clamp(24px,7.4vw,32px)}
+.wx{min-height:0;padding:0 0 2px;border:0;gap:6px;flex:none;align-items:center}
+.wx svg{width:30px;height:30px}
+.wx .tp{font-size:22px}
+.wx .ds{font-size:12px;gap:0}.wx .ds b{font-size:12px;font-weight:500;color:var(--mute)}
+.wx .ds>span,.wx .pl,.wx .ask{display:none}
+.wx .btn{min-height:36px;padding:0 10px;font-size:13px}
+.mon b{font-size:20px}}
 @media(max-width:600px){.cell{min-height:76px;padding:3px 2px;align-items:stretch;gap:2px}.num{font-size:13px;width:24px;height:24px;margin:0 auto}.chip{font-size:10.5px;line-height:1.3;padding:2px 3px;border-radius:4px;white-space:normal;word-break:keep-all;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3}.chip:nth-of-type(n+3){display:none}.more{font-size:10px;padding:0;text-align:center}.dow div{text-align:center;padding:8px 2px}.quick{grid-template-columns:minmax(0,1fr) auto}}
 </style>
 </head>
@@ -398,19 +407,23 @@ const ICON={
   snow:'<path d="M13 29h22a8 8 0 0 0 0-16 11 11 0 0 0-21 3 6.5 6.5 0 0 0-1 13z" fill="#aab2bf"/><g fill="#6d9bff"><circle cx="15" cy="37" r="2.6"/><circle cx="24" cy="41" r="2.6"/><circle cx="33" cy="37" r="2.6"/></g>',
   storm:'<path d="M13 28h22a8 8 0 0 0 0-16 11 11 0 0 0-21 3 6.5 6.5 0 0 0-1 13z" fill="#6f7886"/><path d="M26 30l-7 9h6l-3 8 9-11h-6l3-6z" fill="#f5a623"/>'};
 const wxBox=$('wx');
-const wxAsk=msg=>{wxBox.innerHTML=`<span class="ds">${esc(msg)}</span><button class="btn" id="wxBtn">현재 위치 날씨 보기</button>`;$('wxBtn').onclick=()=>wxLocate()};
+const wxAsk=msg=>{wxBox.onclick=null;wxBox.style.cursor='';wxBox.innerHTML=`<span class="ds ask">${esc(msg)}</span><button class="btn" id="wxBtn"><span class="pl">현재 위치 </span>날씨 보기</button>`;$('wxBtn').onclick=()=>wxLocate()};
 function wxShow(w){
   const [name,ic]=WX(w.code);
-  wxBox.innerHTML=`<svg viewBox="0 0 48 48" aria-hidden="true">${ICON[ic]}</svg><span class="tp">${Math.round(w.temp)}°</span><span class="ds"><b>${esc(w.place||'현재 위치')} · ${name}</b><span>최고 ${Math.round(w.max)}° / 최저 ${Math.round(w.min)}°${w.pop!=null?' · 강수 '+Math.round(w.pop)+'%':''}</span></span>`;
+  wxBox.innerHTML=`<svg viewBox="0 0 48 48" aria-hidden="true">${ICON[ic]}</svg><span class="tp">${Math.round(w.temp)}°</span><span class="ds"><b><span class="pl">${esc(w.place||'현재 위치')} · </span>${name}</b><span>최고 ${Math.round(w.max)}° / 최저 ${Math.round(w.min)}°${w.pop!=null?' · 강수 '+Math.round(w.pop)+'%':''}${w.acc>1000?' · 위치 오차 약 '+Math.round(w.acc/1000)+'km':''}</span><span>눌러서 새로고침</span></span>`;
+  wxBox.onclick=()=>wxLocate();wxBox.style.cursor='pointer';
 }
-async function wxFetch(lat,lon){
+async function wxFetch(lat,lon,acc){
   const ctl=new AbortController();const tm=setTimeout(()=>ctl.abort(),8000);
   try{
     const u=`https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(3)}&longitude=${lon.toFixed(3)}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=1`;
     const j=await (await fetch(u,{signal:ctl.signal})).json();
     let place='';
-    try{const g=await (await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=ko`,{signal:ctl.signal})).json();place=String(g.locality||g.city||g.principalSubdivision||'').slice(0,30)}catch(e){}
-    const w={temp:+j.current.temperature_2m,code:+j.current.weather_code,max:+j.daily.temperature_2m_max[0],min:+j.daily.temperature_2m_min[0],pop:j.daily.precipitation_probability_max?.[0]??null,place,at:Date.now(),lat,lon};
+    try{const g=await (await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=ko`,{signal:ctl.signal})).json();const adm=((g.localityInfo&&g.localityInfo.administrative)||[]).map(a=>String(a.name||'')).filter(Boolean);
+      const gu=adm.filter(n=>/(구|군)$/.test(n)).pop()||adm.filter(n=>/시$/.test(n)&&!/특별시|광역시/.test(n)).pop()||String(g.city||'');
+      const dong=String(g.locality||'');
+      place=[gu,dong&&dong!==gu?dong:''].filter(Boolean).join(' ').slice(0,30)||String(g.principalSubdivision||'').slice(0,30)}catch(e){}
+    const w={temp:+j.current.temperature_2m,code:+j.current.weather_code,max:+j.daily.temperature_2m_max[0],min:+j.daily.temperature_2m_min[0],pop:j.daily.precipitation_probability_max?.[0]??null,place,acc:isFinite(acc)?acc:null,at:Date.now(),lat,lon};
     if(!isFinite(w.temp))throw 0;
     try{localStorage.setItem('wx-cache',JSON.stringify(w))}catch(e){}
     wxShow(w);
@@ -418,10 +431,10 @@ async function wxFetch(lat,lon){
 }
 function wxLocate(){
   if(!navigator.geolocation)return wxAsk('이 기기에서는 위치를 쓸 수 없어요.');
-  wxBox.innerHTML='<span class="ds">현재 위치를 확인하는 중…</span>';
-  navigator.geolocation.getCurrentPosition(pos=>{try{localStorage.setItem('wx-ok','1')}catch(e){}wxFetch(pos.coords.latitude,pos.coords.longitude)},
+  wxBox.onclick=null;wxBox.innerHTML='<span class="ds">현재 위치를 확인하는 중…</span>';
+  navigator.geolocation.getCurrentPosition(pos=>{try{localStorage.setItem('wx-ok','1')}catch(e){}wxFetch(pos.coords.latitude,pos.coords.longitude,pos.coords.accuracy)},
     err=>{try{localStorage.removeItem('wx-ok')}catch(e){}wxAsk(err.code===1?'위치 권한을 허용하면 날씨가 보여요.':'위치를 찾지 못했어요.')},
-    {enableHighAccuracy:false,timeout:10000,maximumAge:30*60000});
+    {enableHighAccuracy:true,timeout:15000,maximumAge:5*60000});
 }
 (function wxInit(){
   let c=null,ok=false;try{c=JSON.parse(localStorage.getItem('wx-cache')||'null');ok=localStorage.getItem('wx-ok')==='1'}catch(e){}
