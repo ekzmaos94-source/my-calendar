@@ -212,7 +212,7 @@ h1{font-size:clamp(24px,7.4vw,32px)}
       <p>한국 주식은 <b>종목코드 6자리</b>, 미국 주식은 <b>티커</b>만 쓰면 돼요. 줄 끝의 쉼표(,)는 마지막 줄만 빼고 꼭 붙여 주세요.</p>
       <pre>{"symbol": "005930", "name": "삼성전자"},
 {"symbol": "AAPL", "name": "애플"}</pre>
-      <p>한국 주식은 평일 오후 4시에 그날 종가로, 미국 주식은 한국 시간 오전 7시(서머타임 기간엔 오전 6시)에 전날 미국 종가로 자동 업데이트돼요.</p>
+      <p>한국 주식은 평일 오후 4시 5분쯤 그날 종가로, 미국 주식은 한국 시간 오전 7시 5분쯤(서머타임 기간엔 6시 5분쯤) 전날 미국 종가로 자동 업데이트돼요. GitHub 사정으로 늦어지면 30분쯤 뒤에 한 번 더 확인해요.</p>
     </details>
   </section>
 </div>
@@ -656,10 +656,15 @@ async function loadPrices(force){
   if(!force&&Date.now()-pricesAt<10*60000)return;
   const cache=store.get('inv-cache',null);
   if(!pricesAt)cache?renderPrices(cache):$('invList').innerHTML='<p class="empty">종가를 불러오는 중…</p>';
+  const btn=$('invRefresh');if(force){btn.disabled=true;btn.textContent='확인 중…'}
   try{
     const r=await fetch(pricesUrl(),{cache:'no-store'});if(!r.ok)throw 0;
     const d=await r.json();pricesAt=Date.now();renderPrices(d);store.set('inv-cache',d);
-  }catch(e){if(!cache)$('invList').innerHTML='<p class="empty">종가 파일을 찾지 못했어요. GitHub Actions가 한 번 실행돼야 생겨요.</p>'}
+    if(force){const up=new Date(d.updated);toast(isNaN(up)?'최신 종가를 확인했어요.':`최신 상태예요 · 마지막 업데이트 ${up.getMonth()+1}월 ${up.getDate()}일 ${pad(up.getHours())}:${pad(up.getMinutes())}`)}
+  }catch(e){
+    if(!cache)$('invList').innerHTML='<p class="empty">종가 파일을 찾지 못했어요. GitHub Actions가 한 번 실행돼야 생겨요.</p>';
+    if(force)toast('종가를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.');
+  }finally{btn.disabled=false;btn.textContent='새로고침'}
 }
 $('invRefresh').onclick=()=>loadPrices(true);
 { // GitHub Pages 주소(아이디.github.io/저장소)에서 편집 화면 주소 만들기
