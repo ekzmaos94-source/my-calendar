@@ -1,11 +1,15 @@
 # 관심 종목 종가를 매일 받아 prices.json으로 저장하는 자동 작업
+# GitHub은 매시 정각에 예약이 몰려 늦거나 빠질 수 있어서, 5분에 실행하고 35분 뒤 한 번 더 확인해요.
+# (바뀐 종가가 없으면 저장하지 않으니 두 번 돌아도 괜찮아요)
 name: 관심 종목 종가 업데이트
 
 on:
   schedule:
-    - cron: "0 7 * * 1-5"     # 한국 주식: 평일 한국 시간 16:00
-    - cron: "0 21 * * 1-5"    # 미국 주식(서머타임 기간): 한국 시간 다음 날 06:00
-    - cron: "0 22 * * 1-5"    # 미국 주식(서머타임 아닐 때): 한국 시간 다음 날 07:00
+    - cron: "5 7 * * 1-5"     # 한국 주식: 평일 한국 시간 16:05
+    - cron: "40 7 * * 1-5"    #   └ 다시 확인 16:40
+    - cron: "5 21 * * 1-5"    # 미국 주식(서머타임 기간): 한국 시간 다음 날 06:05
+    - cron: "5 22 * * 1-5"    # 미국 주식: 한국 시간 다음 날 07:05 (서머타임이면 다시 확인)
+    - cron: "40 22 * * 1-5"   #   └ 다시 확인 07:40
   push:
     paths: ["watchlist.json"]  # 종목 목록을 바꾸면 바로 실행
   workflow_dispatch:           # Actions 탭에서 직접 실행 버튼
@@ -17,21 +21,21 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      # 미국 시간 두 개 중 지금 서머타임 여부에 맞는 하나만 실행
+      # 서머타임이 아닐 때는 한국 시간 06시대 실행을 건너뛰어요 (07시 이후에 업데이트)
       - name: 실행할 차례인지 확인
         id: gate
         env:
           EVENT: ${{ github.event_name }}
-          CRON: ${{ github.event.schedule }}
         run: |
           python3 - <<'PY' >> "$GITHUB_OUTPUT"
           import os
-          from datetime import datetime
+          from datetime import datetime, timezone
           from zoneinfo import ZoneInfo
           run = True
-          if os.environ["EVENT"] == "schedule" and os.environ["CRON"] != "0 7 * * 1-5":
+          if os.environ["EVENT"] == "schedule":
               summer = bool(datetime.now(ZoneInfo("America/New_York")).dst())
-              run = (os.environ["CRON"] == "0 21 * * 1-5") == summer
+              if datetime.now(timezone.utc).hour == 21 and not summer:
+                  run = False
           print("run=" + ("true" if run else "false"))
           PY
       - uses: actions/checkout@v4
