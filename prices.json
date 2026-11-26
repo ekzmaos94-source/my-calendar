@@ -1,27 +1,27 @@
 {
- "updated": "2026-11-26T12:29+09:00",
+ "updated": "2026-11-27T02:40+09:00",
  "items": [
   {
    "symbol": "379800.KS",
    "name": "KODEX 미국S&P500",
    "market": "KR",
    "currency": "KRW",
-   "date": "2026-11-25",
-   "close": 21570.0,
-   "prev": 21880.0,
-   "change": -310.0,
-   "changePct": -1.42
+   "date": "2026-11-26",
+   "close": 21755.0,
+   "prev": 21570.0,
+   "change": 185.0,
+   "changePct": 0.86
   },
   {
    "symbol": "381170.KS",
    "name": "TIGER 미국테크TOP10 INDXX",
    "market": "KR",
    "currency": "KRW",
-   "date": "2026-11-25",
-   "close": 26635.0,
-   "prev": 27530.0,
-   "change": -895.0,
-   "changePct": -3.25
+   "date": "2026-11-26",
+   "close": 26790.0,
+   "prev": 26635.0,
+   "change": 155.0,
+   "changePct": 0.58
   },
   {
    "symbol": "005930.KS",
@@ -50,11 +50,11 @@
    "name": "KODEX 미국AI전력핵심인프라",
    "market": "KR",
    "currency": "KRW",
-   "date": "2026-11-25",
-   "close": 12885.0,
-   "prev": 13815.0,
-   "change": -930.0,
-   "changePct": -6.73
+   "date": "2026-11-26",
+   "close": 13210.0,
+   "prev": 12885.0,
+   "change": 325.0,
+   "changePct": 2.52
   },
   {
    "symbol": "CVS",
