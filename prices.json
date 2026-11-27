@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-27T02:40+09:00",
+ "updated": "2026-11-27T12:35+09:00",
  "items": [
   {
    "symbol": "379800.KS",
@@ -28,22 +28,22 @@
    "name": "삼성전자",
    "market": "KR",
    "currency": "KRW",
-   "date": "2026-11-25",
-   "close": 170700.0,
-   "prev": 189400.0,
-   "change": -18700.0,
-   "changePct": -9.87
+   "date": "2026-11-26",
+   "close": 171300.0,
+   "prev": 170700.0,
+   "change": 600.0,
+   "changePct": 0.35
   },
   {
    "symbol": "417840.KS",
    "name": "저스템",
    "market": "KR",
    "currency": "KRW",
-   "date": "2026-11-25",
-   "close": 8930.0,
-   "prev": 9850.0,
-   "change": -920.0,
-   "changePct": -9.34
+   "date": "2026-11-26",
+   "close": 8710.0,
+   "prev": 8930.0,
+   "change": -220.0,
+   "changePct": -2.46
   },
   {
    "symbol": "487230.KS",
